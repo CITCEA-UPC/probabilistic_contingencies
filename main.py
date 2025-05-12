@@ -1,174 +1,144 @@
-import random
 import GridCalEngine.api as gce
-from collections import defaultdict
+from pprint import pprint
 
-def run_power_flow_and_check(grid):
-    """
-    Runs a power flow on the given grid and returns:
-      - converged (bool): whether the power flow converged
-      - overloaded (bool): whether any branch loading > 1.0
-      - loadings (list of float): per-branch loading values (pu)
-    """
-    result = gce.power_flow(grid)
-    if not result.converged:
-        return False, False, []
-    loadings = result.loading
-    overloaded = any(l > 1.0 for l in loadings)
-    return True, overloaded, loadings
 
-def collect_components(grid):
+def check_line_overloads(results, grid):
     """
-    Returns a flat list of all elements that can fail:
-      [('line', index, line_obj), ('transformer', index, tr_obj), ('generator', index, gen_obj), ...]
+    Checks all lines in the grid for overload.
+    Uses the 'loading' values in the results and the branch data from grid.get_branches().
+
+    Returns:
+      - A list of line indices that are overloaded (i.e. loading > 1).
     """
-    components = []
+    overloaded_lines = []
+    for idx, (loading, branch) in enumerate(zip(results.loading, grid.get_branches())):
+        if loading > 1:
+            overloaded_lines.append(idx)
+    return overloaded_lines
+
+
+def check(grid):
     for idx, line in enumerate(grid.lines):
-        components.append(('line', idx, line))
-    for idx, tx in enumerate(grid.transformers2w):
-        components.append(('transformer', idx, tx))
-    for idx, gen in enumerate(grid.generators):
-        components.append(('generator', idx, gen))
-    return components
+        if not line.active:
+            raise Exception(f"Línea en índice {idx} no está activa")
+    for idx, transformer in enumerate(grid.transformers2w):
+        if not transformer.active:
+            raise Exception(f"transformer en índice {idx} no está activa")
+    for idx, generator in enumerate(grid.generators):
+        if not generator.active:
+            raise Exception(f"generator en índice {idx} no está activa")
 
-def simulate_contingencies(grid_file, num_iterations, p_fail):
-    """
-    Performs Monte Carlo contingency analysis:
-      - grid_file: path to the .gridcal network file
-      - num_iterations: number of Monte Carlo runs
-      - p_fail: probability that any given component fails in a run
-
-    Returns a dictionary with two phases: 'single' and 'double'.
-    Each phase has:
-      - runs: how many times we attempted that contingency
-      - failures: how many times the system collapsed
-      - details: list of dicts with keys:
-          type  -> 'line'|'transformer'|'generator'
-          index -> component index
-          reason-> 'no_converge'|'overload'
-          pct   -> max overload percentage (only if reason=='overload')
-      - tested_per_element: counts of how many times each element was taken down
-      - nonconv_per_element: counts of how many times that led to non-convergence
-    """
-    stats = {
-        'single': {
-            'runs': 0, 'failures': 0, 'details': [],
-            'tested_per_element': defaultdict(int),
-            'nonconv_per_element': defaultdict(int)
-        },
-        'double': {
-            'runs': 0, 'failures': 0, 'details': [],
-            'tested_per_element': defaultdict(int),
-            'nonconv_per_element': defaultdict(int)
-        },
-    }
-
-    for _ in range(num_iterations):
-        grid = gce.open_file(grid_file)
-        all_comps = collect_components(grid)
-
-        # --- First contingency (single failure) ---
-        comp1 = random.choice(all_comps)
-        key1 = (comp1[0], comp1[1])
-        if random.random() < p_fail:
-            stats['single']['runs'] += 1
-            stats['single']['tested_per_element'][key1] += 1
-
-            comp1[2].active = False
-            conv1, ovld1, loads1 = run_power_flow_and_check(grid)
-
-            if not conv1:
-                stats['single']['failures'] += 1
-                stats['single']['nonconv_per_element'][key1] += 1
-                stats['single']['details'].append({
-                    'type': comp1[0],
-                    'index': comp1[1],
-                    'reason': 'no_converge'
-                })
-                print(f"[CRITICAL Level 1] {comp1[0]} {comp1[1]} caused non-convergence")
-                continue
-
-            if ovld1:
-                pct1 = max(loads1) * 100
-                stats['single']['failures'] += 1
-                stats['single']['details'].append({
-                    'type': comp1[0],
-                    'index': comp1[1],
-                    'reason': 'overload',
-                    'pct': pct1
-                })
-                continue
-        else:
-            continue
-
-        # --- Second contingency (double failure) ---
-        remaining = [c for c in all_comps if c != comp1]
-        comp2 = random.choice(remaining)
-        key2 = (comp2[0], comp2[1])
-        if random.random() < p_fail:
-            stats['double']['runs'] += 1
-            stats['double']['tested_per_element'][key2] += 1
-
-            comp2[2].active = False
-            conv2, ovld2, loads2 = run_power_flow_and_check(grid)
-
-            if not conv2:
-                stats['double']['failures'] += 1
-                stats['double']['nonconv_per_element'][key2] += 1
-                stats['double']['details'].append({
-                    'type': comp2[0],
-                    'index': comp2[1],
-                    'reason': 'no_converge'
-                })
-                print(f"[CRITICAL Level 2] {comp2[0]} {comp2[1]} caused non-convergence")
-            elif ovld2:
-                pct2 = max(loads2) * 100
-                stats['double']['failures'] += 1
-                stats['double']['details'].append({
-                    'type': comp2[0],
-                    'index': comp2[1],
-                    'reason': 'overload',
-                    'pct': pct2
-                })
-
-    return stats
 
 if __name__ == "__main__":
-    GRID_FILE = 'IEEE118_opf.gridcal'
-    N_SIMULATIONS = 10
-    FAILURE_PROBABILITY = 1  # 100% chance of any component failing
+    # GRID_FILE = 'IEEE118_opf.gridcal'
+    GRID_FILE = 'IEEE_14.xlsx'
+    grid = gce.open_file(GRID_FILE)
+    FAILURE_PROBABILITY = 100  # 100% chance of any component failing
 
-    results = simulate_contingencies(GRID_FILE, N_SIMULATIONS, FAILURE_PROBABILITY)
+    results = {
+        'first_level_line': [],
+        'first_level_transformer': [],
+        'first_level_generator': [],
+        'second_level_line_line': [],
+        'second_level_line_transformer': [],
+        'second_level_line_generator': [],
+        'second_level_transformer_line': [],
+        'second_level_transformer_transformer': [],
+        'second_level_transformer_generator': [],
+        'second_level_generator_line': [],
+        'second_level_generator_transformer': [],
+        'second_level_generator_generator': [],
 
-    # Print overall summary
-    for phase in ['single', 'double']:
-        runs = results[phase]['runs']
-        fails = results[phase]['failures']
-        collapse_rate = (fails / runs * 100) if runs else 0.0
-        print(f"{phase.capitalize()} contingency: {runs} attempts → {fails} collapses ({collapse_rate:.2f}%)")
+    }
 
-    # Print detailed failure info
-    print("\nSingle-contingency failures:")
-    for detail in results['single']['details']:
-        if detail['reason'] == 'no_converge':
-            print(f" - {detail['type']} {detail['index']}: did not converge")
+    # Simular primer error a les línies
+    for idx, line in enumerate(grid.lines):
+        line.active = False
+        if not gce.power_flow(grid).converged:
+            results['first_level_line'].append(idx)
         else:
-            print(f" - {detail['type']} {detail['index']}: overload {detail['pct']:.1f}%")
-
-    print("\nDouble-contingency failures:")
-    for detail in results['double']['details']:
-        if detail['reason'] == 'no_converge':
-            print(f" - {detail['type']} {detail['index']}: did not converge")
+            # Simular segon error a les línies
+            for idx2, line2 in enumerate(grid.lines):
+                # Comprovar que no sigui la mateixa línia
+                if idx2 != idx:
+                    line2.active = False
+                    if not gce.power_flow(grid).converged:
+                        results['second_level_line_line'].append([idx, idx2])
+                    line2.active = True
+            # Simular segon error als transformadors
+            for idx2, transformer in enumerate(grid.transformers2w):
+                transformer.active = False
+                if not gce.power_flow(grid).converged:
+                    results['second_level_line_transformer'].append([idx, idx2])
+                transformer.active = True
+            # Simular segon error als generadors
+            for idx2, generator in enumerate(grid.generators):
+                generator.active = False
+                res = gce.power_flow(grid)
+                if not gce.power_flow(grid).converged:
+                    results['second_level_line_generator'].append([idx, idx2])
+                generator.active = True
+        line.active = True
+    check(grid)
+    # Simular primer error als transformadors
+    for idx, transformer in enumerate(grid.transformers2w):
+        transformer.active = False
+        if not gce.power_flow(grid).converged:
+            results['first_level_transformer'].append(idx)
         else:
-            print(f" - {detail['type']} {detail['index']}: overload {detail['pct']:.1f}%")
+            # Simular segon error a les línies
+            for idx2, line in enumerate(grid.lines):
+                line.active = False
+                if not gce.power_flow(grid).converged:
+                    results['second_level_transformer_line'].append([idx, idx2])
+                line.active = True
+            # Simular segon error als transformadors
+            for idx2, transformer2 in enumerate(grid.transformers2w):
+                # Comprovar que no sigui el mateix transformador
+                if idx2 != idx:
+                    transformer2.active = False
+                    if not gce.power_flow(grid).converged:
+                        results['second_level_transformer_transformer'].append([idx, idx2])
+                    transformer2.active = True
+            # Simular segon error als generadors
+            for idx2, generator in enumerate(grid.generators):
+                generator.active = False
+                res = gce.power_flow(grid)
+                if not gce.power_flow(grid).converged:
+                    results['second_level_transformer_generator'].append([idx, idx2])
+                generator.active = True
+        transformer.active = True
+    check(grid)
 
-    # Print critical elements statistics
-    print("\nCritical elements statistics (P[non-converge | component fails]):")
-    for phase in ['single', 'double']:
-        print(f"\n{phase.capitalize()} level:")
-        tested = results[phase]['tested_per_element']
-        nonconv = results[phase]['nonconv_per_element']
-        for comp, t in tested.items():
-            nc = nonconv.get(comp, 0)
-            pct = (nc / t * 100) if t else 0.0
-            # ahora mostramos TODO, incluso si pct == 0
-            print(f" - {comp[0].capitalize()} {comp[1]}: {pct:.2f}% ({nc}/{t})")
+    # Simular primer error als generadors
+    for idx, generator in enumerate(grid.generators):
+        generator.active = False
+        if not gce.power_flow(grid).converged:
+            results['first_level_generator'].append(idx)
+        else:
+            # Simular segon error a les línies
+            for idx2, line in enumerate(grid.lines):
+                line.active = False
+                if not gce.power_flow(grid).converged:
+                    results['second_level_generator_line'].append([idx, idx2])
+                line.active = True
+            # Simular segon error als transformadors
+            for idx2, transformer in enumerate(grid.transformers2w):
+                transformer.active = False
+                if not gce.power_flow(grid).converged:
+                    results['second_level_generator_transformer'].append([idx, idx2])
+                transformer.active = True
+            # Simular segon error als generadors
+            for idx2, generator2 in enumerate(grid.generators):
+                # Comprovar que no sigui el mateix generador
+                if idx2 != idx:
+                    generator2.active = False
+                    res = gce.power_flow(grid)
+                    if not gce.power_flow(grid).converged:
+                        results['second_level_generator_generator'].append([idx, idx2])
+                    generator2.active = True
+        generator.active = True
+    check(grid)
+
+
+    pprint(results)
