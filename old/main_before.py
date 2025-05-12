@@ -133,7 +133,7 @@ def simulate_contingencies(grid_file, num_iterations, p_fail):
     return stats
 
 if __name__ == "__main__":
-    GRID_FILE = 'IEEE118_opf.gridcal'
+    GRID_FILE = '../grids/IEEE118_opf.gridcal'
     N_SIMULATIONS = 10
     FAILURE_PROBABILITY = 1  # 100% chance of any component failing
 

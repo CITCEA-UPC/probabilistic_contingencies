@@ -155,7 +155,7 @@ def simulate_individual_failures(grid, sim_time):
 if __name__ == "__main__":
     # Load the grid (ensure that 'IEEE_14.xlsx' is in the correct path)
     #grid = gce.open_file('IEEE_14.xlsx')
-    grid = gce.open_file('IEEE118_opf.gridcal')
+    grid = gce.open_file('../grids/IEEE118_opf.gridcal')
 
     # Assign MTTF to each type of element (values in hours)
     for line in grid.lines:
