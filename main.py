@@ -12,7 +12,7 @@ import pandas as pd
 from stability_analysis.preprocess import preprocess_data, read_data, \
     process_raw
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow, slack_bus, fill_d_grid_after_powerflow
-#from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
+# from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from stability_analysis.preprocess import parameters
 
 from stability_analysis.state_space import build_ss, generate_NET, generate_elements
@@ -71,6 +71,79 @@ def check(grid):
         if not generator.active:
             raise Exception(f"Generator at index {idx} is not active")
 
+
+def check_stability(grid, d_grid, pf_results, d_raw_data):
+    # Update PF results and operation point of generator elements
+    d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
+
+    d_grid, d_pf = fill_d_grid_after_powerflow.fill_d_grid(d_grid,
+                                                           grid, d_pf,
+                                                           d_raw_data, d_op)
+
+    # %% READ PARAMETERS
+
+    # Get parameters of generator units from excel files & compute pu base
+    d_grid = parameters.get_params(d_grid, d_sg, d_vsc)
+
+    # Assign slack bus and slack element
+    d_grid = slack_bus.assign_slack(d_grid)
+
+    # Compute reference angle (delta_slk)
+    d_grid, REF_w, num_slk, delta_slk = slack_bus.delta_slk(d_grid)
+
+    # %% GENERATE STATE-SPACE MODEL
+
+    # Generate AC & DC NET State-Space Model
+
+    """
+    connect_fun: 'append_and_connect' (default) or 'interconnect'. 
+        'append_and_connect': Uses a function that bypasses linearization; 
+        'interconnect': use original ct.interconnect function. 
+    save_ss_matrices: bool. Default is False. 
+        If True, write on csv file the A, B, C, D matrices of the state space.
+        False default option
+    """
+    connect_fun = 'append_and_connect'
+    save_ss_matrices = False
+
+    l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(
+        d_grid, delta_slk, connect_fun, save_ss_matrices)
+
+    # Generate generator units State-Space Model
+    l_blocks, l_states = generate_elements.generate_SS_elements(
+        d_grid, delta_slk, l_blocks, l_states, connect_fun, save_ss_matrices)
+
+    # %% BUILD FULL SYSTEM STATE-SPACE MODEL
+
+    # Define full system inputs and ouputs
+    var_in = ['NET_Rld1']
+    var_out = ['all']  # ['all']  # ['GFOR3_w'] #
+
+    # Build full system state-space model
+
+    inputs, outputs = build_ss.select_io(l_blocks, var_in, var_out)
+    ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun,
+                              save_ss_matrices)
+
+    # %% SMALL-SIGNAL ANALYSIS
+
+    T_EIG = small_signal.FEIG(ss_sys, False)
+    T_EIG.head
+
+    # write to excel
+    # T_EIG.to_excel(path.join(path_results, "EIG_" + excel + ".xlsx"))
+
+    if max(T_EIG['real'] >= 0):
+        stability = 0
+    else:
+        stability = 1
+
+    # Obtain all participation factors
+    # df_PF = small_signal.FMODAL(ss_sys, plot=False)
+    # # Obtain the participation factors for the selected modes
+    # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
+    # # Obtain the participation factors >= tol, for the selected modes
+    return stability, T_EIG
 
 if __name__ == "__main__":
     # Path to the grid file
@@ -167,7 +240,7 @@ if __name__ == "__main__":
 
     # --- Simulate first-level failures on lines ---
     for idx, line in enumerate(grid.lines):
-        # line.active = False
+        line.active = False
         if not gce.power_flow(grid).converged:
             # If power flow fails, record this line index
             results['first_level_line'].append([idx, detect_islands(grid)])
@@ -177,79 +250,9 @@ if __name__ == "__main__":
 
             # Get Power-Flow results with GridCal
             pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
+            stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
 
-            print('Converged:', pf_results.convergence_reports[0].converged_[0])
-
-            # Update PF results and operation point of generator elements
-            d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
-
-            d_grid, d_pf = fill_d_grid_after_powerflow.fill_d_grid(d_grid,
-                                                                   grid, d_pf,
-                                                                   d_raw_data, d_op)
-
-            # %% READ PARAMETERS
-
-            # Get parameters of generator units from excel files & compute pu base
-            d_grid = parameters.get_params(d_grid, d_sg, d_vsc)
-
-            # Assign slack bus and slack element
-            d_grid = slack_bus.assign_slack(d_grid)
-
-            # Compute reference angle (delta_slk)
-            d_grid, REF_w, num_slk, delta_slk = slack_bus.delta_slk(d_grid)
-
-            # %% GENERATE STATE-SPACE MODEL
-
-            # Generate AC & DC NET State-Space Model
-
-            """
-            connect_fun: 'append_and_connect' (default) or 'interconnect'. 
-                'append_and_connect': Uses a function that bypasses linearization; 
-                'interconnect': use original ct.interconnect function. 
-            save_ss_matrices: bool. Default is False. 
-                If True, write on csv file the A, B, C, D matrices of the state space.
-                False default option
-            """
-            connect_fun = 'append_and_connect'
-            save_ss_matrices = False
-
-            l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(
-                d_grid, delta_slk, connect_fun, save_ss_matrices)
-
-            # Generate generator units State-Space Model
-            l_blocks, l_states = generate_elements.generate_SS_elements(
-                d_grid, delta_slk, l_blocks, l_states, connect_fun, save_ss_matrices)
-
-            # %% BUILD FULL SYSTEM STATE-SPACE MODEL
-
-            # Define full system inputs and ouputs
-            var_in = ['NET_Rld1']
-            var_out = ['all']  # ['all']  # ['GFOR3_w'] #
-
-            # Build full system state-space model
-
-            inputs, outputs = build_ss.select_io(l_blocks, var_in, var_out)
-            ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun,
-                                      save_ss_matrices)
-
-            # %% SMALL-SIGNAL ANALYSIS
-
-            T_EIG = small_signal.FEIG(ss_sys, False)
-            T_EIG.head
-
-            # write to excel
-            # T_EIG.to_excel(path.join(path_results, "EIG_" + excel + ".xlsx"))
-
-            if max(T_EIG['real'] >= 0):
-                stability = 0
-            else:
-                stability = 1
-
-            # Obtain all participation factors
-            # df_PF = small_signal.FMODAL(ss_sys, plot=False)
-            # # Obtain the participation factors for the selected modes
-            # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
-            # # Obtain the participation factors >= tol, for the selected modes
+            print('Converged:', pf_results.convergence_reports[0].converged_[0], stability)
 
             # Otherwise, simulate second-level failures:
 
