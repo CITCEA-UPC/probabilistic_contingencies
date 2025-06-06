@@ -241,6 +241,9 @@ if __name__ == "__main__":
     # --- Simulate first-level failures on lines ---
     for idx, line in enumerate(grid.lines):
         line.active = False
+
+
+
         if not gce.power_flow(grid).converged:
             # If power flow fails, record this line index
             results['first_level_line'].append([idx, detect_islands(grid)])
@@ -283,70 +286,70 @@ if __name__ == "__main__":
     # Ensure all components are active again
     check(grid)
     print('Lines done')
-    # --- Simulate first-level failures on transformers ---
-    for idx, transformer in enumerate(grid.transformers2w):
-        transformer.active = False
-        if not gce.power_flow(grid).converged:
-            results['first_level_transformer'].append([idx, detect_islands(grid)])
-        else:
-            # Second-level on lines
-            for idx2, line in enumerate(grid.lines):
-                line.active = False
-                if not gce.power_flow(grid).converged:
-                    results['second_level_transformer_line'].append([idx, idx2, detect_islands(grid)])
-                line.active = True
-
-            # Second-level on other transformers
-            for idx2, transformer2 in enumerate(grid.transformers2w):
-                if idx2 != idx:
-                    transformer2.active = False
-                    if not gce.power_flow(grid).converged:
-                        results['second_level_transformer_transformer'].append([idx, idx2, detect_islands(grid)])
-                    transformer2.active = True
-
-            # Second-level on generators
-            for idx2, generator in enumerate(grid.generators):
-                generator.active = False
-                if not gce.power_flow(grid).converged:
-                    results['second_level_transformer_generator'].append([idx, idx2, detect_islands(grid)])
-                generator.active = True
-
-        transformer.active = True
-
-    check(grid)
-    print('Transformers done')
-    # --- Simulate first-level failures on generators ---
-    for idx, generator in enumerate(grid.generators):
-        generator.active = False
-        if not gce.power_flow(grid).converged:
-            results['first_level_generator'].append([idx, detect_islands(grid)])
-        else:
-            # Second-level on lines
-            for idx2, line in enumerate(grid.lines):
-                line.active = False
-                if not gce.power_flow(grid).converged:
-                    results['second_level_generator_line'].append([idx, idx2, detect_islands(grid)])
-                line.active = True
-
-            # Second-level on transformers
-            for idx2, transformer in enumerate(grid.transformers2w):
-                transformer.active = False
-                if not gce.power_flow(grid).converged:
-                    results['second_level_generator_transformer'].append([idx, idx2, detect_islands(grid)])
-                transformer.active = True
-
-            # Second-level on other generators
-            for idx2, generator2 in enumerate(grid.generators):
-                if idx2 != idx:
-                    generator2.active = False
-                    if not gce.power_flow(grid).converged:
-                        results['second_level_generator_generator'].append([idx, idx2, detect_islands(grid)])
-                    generator2.active = True
-
-        generator.active = True
-
-    check(grid)
-    print('Generators done')
+    # # --- Simulate first-level failures on transformers ---
+    # for idx, transformer in enumerate(grid.transformers2w):
+    #     transformer.active = False
+    #     if not gce.power_flow(grid).converged:
+    #         results['first_level_transformer'].append([idx, detect_islands(grid)])
+    #     else:
+    #         # Second-level on lines
+    #         for idx2, line in enumerate(grid.lines):
+    #             line.active = False
+    #             if not gce.power_flow(grid).converged:
+    #                 results['second_level_transformer_line'].append([idx, idx2, detect_islands(grid)])
+    #             line.active = True
+    #
+    #         # Second-level on other transformers
+    #         for idx2, transformer2 in enumerate(grid.transformers2w):
+    #             if idx2 != idx:
+    #                 transformer2.active = False
+    #                 if not gce.power_flow(grid).converged:
+    #                     results['second_level_transformer_transformer'].append([idx, idx2, detect_islands(grid)])
+    #                 transformer2.active = True
+    #
+    #         # Second-level on generators
+    #         for idx2, generator in enumerate(grid.generators):
+    #             generator.active = False
+    #             if not gce.power_flow(grid).converged:
+    #                 results['second_level_transformer_generator'].append([idx, idx2, detect_islands(grid)])
+    #             generator.active = True
+    #
+    #     transformer.active = True
+    #
+    # check(grid)
+    # print('Transformers done')
+    # # --- Simulate first-level failures on generators ---
+    # for idx, generator in enumerate(grid.generators):
+    #     generator.active = False
+    #     if not gce.power_flow(grid).converged:
+    #         results['first_level_generator'].append([idx, detect_islands(grid)])
+    #     else:
+    #         # Second-level on lines
+    #         for idx2, line in enumerate(grid.lines):
+    #             line.active = False
+    #             if not gce.power_flow(grid).converged:
+    #                 results['second_level_generator_line'].append([idx, idx2, detect_islands(grid)])
+    #             line.active = True
+    #
+    #         # Second-level on transformers
+    #         for idx2, transformer in enumerate(grid.transformers2w):
+    #             transformer.active = False
+    #             if not gce.power_flow(grid).converged:
+    #                 results['second_level_generator_transformer'].append([idx, idx2, detect_islands(grid)])
+    #             transformer.active = True
+    #
+    #         # Second-level on other generators
+    #         for idx2, generator2 in enumerate(grid.generators):
+    #             if idx2 != idx:
+    #                 generator2.active = False
+    #                 if not gce.power_flow(grid).converged:
+    #                     results['second_level_generator_generator'].append([idx, idx2, detect_islands(grid)])
+    #                 generator2.active = True
+    #
+    #     generator.active = True
+    #
+    # check(grid)
+    # print('Generators done')
     # Print the aggregated results
     pprint(results)
     with open('results.json', 'w', encoding='utf-8') as f:
