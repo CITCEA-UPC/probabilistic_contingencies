@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import GridCalEngine.api as gce
-from pprint import pprint
 import json
 import networkx as nx
-import control as ct
 
 import os
 import pandas as pd
@@ -72,8 +70,9 @@ def check(grid):
             raise Exception(f"Generator at index {idx} is not active")
 
 
-def check_stability(grid, d_grid, pf_results, d_raw_data):
+def check_stability_and_pf(grid, d_grid, d_raw_data):
     try:
+        pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
         # Update PF results and operation point of generator elements
         d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
 
@@ -129,7 +128,7 @@ def check_stability(grid, d_grid, pf_results, d_raw_data):
         # %% SMALL-SIGNAL ANALYSIS
 
         T_EIG = small_signal.FEIG(ss_sys, False)
-        T_EIG.head
+
 
         # write to excel
         # T_EIG.to_excel(path.join(path_results, "EIG_" + excel + ".xlsx"))
@@ -144,10 +143,10 @@ def check_stability(grid, d_grid, pf_results, d_raw_data):
         # # Obtain the participation factors for the selected modes
         # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
         # # Obtain the participation factors >= tol, for the selected modes
-        return stability, T_EIG
+        return stability, T_EIG, gce.power_flow(grid).converged, pf_results.convergence_reports[0].converged_[0]
     except Exception as e:
         print(f"Error during stability check: {e}")
-        return 0, None
+        return e, None, False, False
 
 if __name__ == "__main__":
     # Path to the grid file
@@ -268,16 +267,13 @@ if __name__ == "__main__":
     # --- Simulate first-level failures on lines ---
     for idx, line in enumerate(grid.lines):
         line.active = False
-        # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
 
-
-        stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+        stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         results['single']['line'].append({
             'element': {'type': 'line', 'id': idx},
-            'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-            'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+            'gce.powerflow_converged': pf_converged,
+            'gce.run_powerflow_converged': run_pf_converged,
             'stability': stability,
             'islands': detect_islands(grid)
         })
@@ -287,19 +283,15 @@ if __name__ == "__main__":
             if idx2 != idx:
                 line2.active = False
 
-                # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-                stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+                stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 results['double']['line']['line'].append({
                     'elements': [
                         {'type': 'line', 'id': idx},
                         {'type': 'line', 'id': idx2}
                     ],
-                    'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                    'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                    'gce.powerflow_converged': pf_converged,
+                    'gce.run_powerflow_converged': run_pf_converged,
                     'stability': stability,
                     'islands': detect_islands(grid)
                 })
@@ -308,19 +300,16 @@ if __name__ == "__main__":
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
-            # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
 
-
-            stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['line']['transformer'].append({
                 'elements': [
                     {'type': 'line', 'id': idx},
                     {'type': 'transformer', 'id': idx2}
                 ],
-                'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                'gce.powerflow_converged': pf_converged,
+                'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
             })
@@ -329,19 +318,15 @@ if __name__ == "__main__":
         # 3) Second-level failures on generators
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
-            # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-            stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['line']['generator'].append({
                 'elements': [
                     {'type': 'line', 'id': idx},
                     {'type': 'generator', 'id': idx2}
                 ],
-                'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                'gce.powerflow_converged': pf_converged,
+                'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
             })
@@ -357,16 +342,12 @@ if __name__ == "__main__":
     # --- Simulate first-level failures on transformers ---
     for idx, transformer in enumerate(grid.transformers2w):
         transformer.active = False
-        # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-        stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+        stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         results['single']['transformer'].append({
             'element': {'type': 'transformer', 'id': idx},
-            'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-            'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+            'gce.powerflow_converged': pf_converged,
+            'gce.run_powerflow_converged': run_pf_converged,
             'stability': stability,
             'islands': detect_islands(grid)
         })
@@ -376,19 +357,16 @@ if __name__ == "__main__":
         for idx2, transformer2 in enumerate(grid.transformers2w):
             if idx2 != idx:
                 transformer2.active = False
-                # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
 
-
-                stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+                stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 results['double']['transformer']['transformer'].append({
                     'elements': [
                         {'type': 'transformer', 'id': idx},
                         {'type': 'transformer', 'id': idx2}
                     ],
-                    'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                    'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                    'gce.powerflow_converged': pf_converged,
+                    'gce.run_powerflow_converged': run_pf_converged,
                     'stability': stability,
                     'islands': detect_islands(grid)
                 })
@@ -398,19 +376,15 @@ if __name__ == "__main__":
         for idx2, line in enumerate(grid.lines):
             line.active = False
 
-            # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-            stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['transformer']['line'].append({
                 'elements': [
                     {'type': 'transformer', 'id': idx},
                     {'type': 'line', 'id': idx2}
                 ],
-                'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                'gce.powerflow_converged': pf_converged,
+                'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
             })
@@ -419,19 +393,16 @@ if __name__ == "__main__":
         # 3) Second-level failures on generators
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
-            # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
 
-
-            stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['transformer']['generator'].append({
                 'elements': [
                     {'type': 'transformer', 'id': idx},
                     {'type': 'generator', 'id': idx2}
                 ],
-                'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                'gce.powerflow_converged': pf_converged,
+                'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
             })
@@ -443,16 +414,12 @@ if __name__ == "__main__":
     # --- Simulate first-level failures on generators ---
     for idx, generator in enumerate(grid.generators):
         generator.active = False
-        # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-        stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+        stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         results['single']['generator'].append({
             'element': {'type': 'generator', 'id': idx},
-            'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-            'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+            'gce.powerflow_converged': pf_converged,
+            'gce.run_powerflow_converged': run_pf_converged,
             'stability': stability,
             'islands': detect_islands(grid)
         })
@@ -461,19 +428,15 @@ if __name__ == "__main__":
         for idx2, line in enumerate(grid.lines):
             line.active = False
 
-            # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-            stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['generator']['line'].append({
                 'elements': [
                     {'type': 'generator', 'id': idx},
                     {'type': 'line', 'id': idx2}
                 ],
-                'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                'gce.powerflow_converged': pf_converged,
+                'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
             })
@@ -481,19 +444,15 @@ if __name__ == "__main__":
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
-            # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-            stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['generator']['transformer'].append({
                 'elements': [
                     {'type': 'generator', 'id': idx},
                     {'type': 'transformer', 'id': idx2}
                 ],
-                'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                'gce.powerflow_converged': pf_converged,
+                'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
             })
@@ -502,19 +461,15 @@ if __name__ == "__main__":
         for idx2, generator2 in enumerate(grid.generators):
             if idx2 != idx:
                 generator2.active = False
-                # # pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-
-
-                stability, T_EIG = True, True # stability, T_EIG = check_stability(grid, d_grid, pf_results, d_raw_data)
-
+                stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 results['double']['generator']['generator'].append({
                     'elements': [
                         {'type': 'generator', 'id': idx},
                         {'type': 'generator', 'id': idx2}
                     ],
-                    'gce.powerflow_converged': 'gce.power_flow(grid).converged',
-                    'gce.run_powerflow_converged': 'pf_results.convergence_reports[0].converged_[0]',
+                    'gce.powerflow_converged': pf_converged,
+                    'gce.run_powerflow_converged': run_pf_converged,
                     'stability': stability,
                     'islands': detect_islands(grid)
                 })
