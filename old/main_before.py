@@ -170,5 +170,5 @@ if __name__ == "__main__":
         for comp, t in tested.items():
             nc = nonconv.get(comp, 0)
             pct = (nc / t * 100) if t else 0.0
-            # ahora mostramos TODO, incluso si pct == 0
+            # ahora mostramos all, incluso si pct == 0
             print(f" - {comp[0].capitalize()} {comp[1]}: {pct:.2f}% ({nc}/{t})")

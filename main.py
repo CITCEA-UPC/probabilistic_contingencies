@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import sys
 
 import GridCalEngine.api as gce
 import json
@@ -23,18 +24,18 @@ def detect_islands(grid):
     and returns True if there is more than one connected component
     (i.e. at least one island), False otherwise.
     """
-    G = nx.Graph()
+    graph = nx.Graph()
     # Add buses
     for bus in grid.buses:
-        G.add_node(bus)
+        graph.add_node(bus)
     # Add edges only for active lines
     for line in grid.lines:
         if line.active:
             i = line.bus_from
             j = line.bus_to
-            G.add_edge(i, j)
+            graph.add_edge(i, j)
     # Count components
-    components = list(nx.connected_components(G))
+    components = list(nx.connected_components(graph))
     return len(components) > 1
 
 
@@ -71,8 +72,10 @@ def check(grid):
 
 
 def check_stability_and_pf(grid, d_grid, d_raw_data):
+
+    pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
+
     try:
-        pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
         # Update PF results and operation point of generator elements
         d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
 
@@ -145,12 +148,15 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         # # Obtain the participation factors >= tol, for the selected modes
         return stability, T_EIG, gce.power_flow(grid).converged, pf_results.convergence_reports[0].converged_[0]
     except Exception as e:
+
+
         print(f"Error during stability check: {e}")
-        return e, None, False, False
+        # gce.save_file(grid, "exemple.gridcal")
+        # sys.exit()
+        return e, None, None, None
 
 if __name__ == "__main__":
     # Path to the grid file
-    GRID_FILE = './stability_analysis/data/raw/IEEE118busNREL.raw'  # 'IEEE118_opf.gridcal'
     '''
     Number of lines: 170
     Number of generators: 54
