@@ -16,6 +16,16 @@ from stability_analysis.preprocess import parameters
 
 from stability_analysis.state_space import build_ss, generate_NET, generate_elements
 from stability_analysis.analysis import small_signal
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
+
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    message=r".*Series\.__getitem__ treating keys as positions is deprecated.*"
+)
+
 
 
 def detect_islands(grid):
@@ -227,6 +237,7 @@ if __name__ == "__main__":
     print(f"Number of generators: {num_generators}")
     print(f"Number of transformers: {num_transformers}")
     # ----------------------------------------------------------------
+    cases = 0
     total_cases = (
             num_lines + num_transformers + num_generators +  # fallos individuales
             num_lines * (num_lines - 1) +  # línea-línea (sin repetirse consigo misma)
@@ -269,11 +280,11 @@ if __name__ == "__main__":
             }
         }
     }
-
     # --- Simulate first-level failures on lines ---
     for idx, line in enumerate(grid.lines):
         line.active = False
-
+        cases += 1
+        print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         results['single']['line'].append({
@@ -288,6 +299,8 @@ if __name__ == "__main__":
         for idx2, line2 in enumerate(grid.lines):
             if idx2 != idx:
                 line2.active = False
+                cases += 1
+                print("Second_level_Lines-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
 
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
@@ -306,7 +319,8 @@ if __name__ == "__main__":
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
-
+            cases += 1
+            print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['line']['transformer'].append({
@@ -324,6 +338,8 @@ if __name__ == "__main__":
         # 3) Second-level failures on generators
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
+            cases += 1
+            print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['line']['generator'].append({
@@ -348,6 +364,8 @@ if __name__ == "__main__":
     # --- Simulate first-level failures on transformers ---
     for idx, transformer in enumerate(grid.transformers2w):
         transformer.active = False
+        cases += 1
+        print("First_level_Transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         results['single']['transformer'].append({
@@ -363,7 +381,8 @@ if __name__ == "__main__":
         for idx2, transformer2 in enumerate(grid.transformers2w):
             if idx2 != idx:
                 transformer2.active = False
-
+                cases += 1
+                print("Second_level_Transformers-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 results['double']['transformer']['transformer'].append({
@@ -381,7 +400,8 @@ if __name__ == "__main__":
         # 2) Second-level failures on lines
         for idx2, line in enumerate(grid.lines):
             line.active = False
-
+            cases += 1
+            print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['transformer']['line'].append({
@@ -399,7 +419,8 @@ if __name__ == "__main__":
         # 3) Second-level failures on generators
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
-
+            cases += 1
+            print("Second_level_Transformers-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['transformer']['generator'].append({
@@ -420,6 +441,8 @@ if __name__ == "__main__":
     # --- Simulate first-level failures on generators ---
     for idx, generator in enumerate(grid.generators):
         generator.active = False
+        cases += 1
+        print("First_level_Generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         results['single']['generator'].append({
@@ -433,7 +456,8 @@ if __name__ == "__main__":
         # 1) Second-level failures on lines
         for idx2, line in enumerate(grid.lines):
             line.active = False
-
+            cases += 1
+            print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['generator']['line'].append({
@@ -450,6 +474,8 @@ if __name__ == "__main__":
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
+            cases += 1
+            print("Second_level_Generators-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results['double']['generator']['transformer'].append({
@@ -467,6 +493,8 @@ if __name__ == "__main__":
         for idx2, generator2 in enumerate(grid.generators):
             if idx2 != idx:
                 generator2.active = False
+                cases += 1
+                print("Second_level_Generators-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 results['double']['generator']['generator'].append({
