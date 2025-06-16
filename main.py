@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
+import os
 
 import GridCalEngine.api as gce
-import json
 import networkx as nx
-
-import os
+import json
+import numpy as np
 import pandas as pd
-from stability_analysis.preprocess import preprocess_data, read_data, \
-    process_raw
+from stability_analysis.preprocess import preprocess_data, read_data, process_raw
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow, slack_bus, fill_d_grid_after_powerflow
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from stability_analysis.preprocess import parameters
@@ -20,13 +19,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
-warnings.filterwarnings(
-    "ignore",
-    category=FutureWarning,
-    message=r".*Series\.__getitem__ treating keys as positions is deprecated.*"
-)
-
-
+warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
 
 def detect_islands(grid):
     """
@@ -82,7 +75,6 @@ def check(grid):
 
 
 def check_stability_and_pf(grid, d_grid, d_raw_data):
-
     pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
 
     try:
@@ -142,7 +134,6 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
 
         T_EIG = small_signal.FEIG(ss_sys, False)
 
-
         # write to excel
         # T_EIG.to_excel(path.join(path_results, "EIG_" + excel + ".xlsx"))
 
@@ -159,11 +150,57 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         return stability, T_EIG, gce.power_flow(grid).converged, pf_results.convergence_reports[0].converged_[0]
     except Exception as e:
 
-
         print(f"Error during stability check: {e}")
         # gce.save_file(grid, "exemple.gridcal")
         # sys.exit()
-        return e, None, None, None
+        return str(e), None, None, None
+
+
+
+
+def remove_existing_result_file(path='results.jsonl'):
+    """
+    Deletes the existing results file if it exists.
+
+    Parameters:
+    - path (str): Path to the results file (default: 'results.jsonl').
+    """
+    if os.path.exists(path):
+        os.remove(path)
+        print(f"Removed existing file: {path}")
+    else:
+        print(f"No existing file found at: {path}")
+
+
+def save_result(result, path='results.jsonl'):
+    """
+    Saves a result as a JSON Lines entry (one JSON object per line).
+    Automatically converts non-serializable types such as numpy types, sets,
+    and exceptions into JSON-compatible formats.
+
+    Parameters:
+    - result (dict): Dictionary containing the result data.
+    - path (str): Path to the .jsonl file (default: 'results.jsonl').
+    """
+
+    def to_serializable(obj):
+        if isinstance(obj, (np.bool_, np.integer, np.floating)):
+            return obj.item()  # Convert numpy types to native Python types
+        if isinstance(obj, set):
+            return list(obj)  # Convert sets to lists
+        if isinstance(obj, BaseException):
+            return str(obj)  # Convert exceptions to strings
+        # Fallback: convert any unknown object to string
+        return str(obj)
+
+    with open(path, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(result, default=to_serializable) + '\n')
+
+
+def read_results_jsonl(route='results.jsonl'):
+    with open(route) as f:
+        return [json.loads(line) for line in f]
+
 
 if __name__ == "__main__":
     # Path to the grid file
@@ -228,6 +265,9 @@ if __name__ == "__main__":
     for el in ['GFOL', 'GFOR']:
         d_op['Generators']['Snom_' + el] = d_raw_data['generator']['alpha_P_' + el] * d_op['Generators']['Snom_CIG']
 
+    # Remove old file if it exists
+    remove_existing_result_file('results.jsonl')
+
     # ----------------------------------------------------------------
     # Print the total counts of each component type
     num_lines = len(grid.lines)
@@ -255,45 +295,27 @@ if __name__ == "__main__":
     # Probability of failure (100% means any component you deactivate will fail)
     FAILURE_PROBABILITY = 100
 
-    # Prepare results buckets for first- and second-level failures
-    results = {
-        'single': {
-            'line': [],
-            'transformer': [],
-            'generator': []
-        },
-        'double': {
-            'line': {
-                'line': [],
-                'transformer': [],
-                'generator': []
-            },
-            'transformer': {
-                'line': [],
-                'transformer': [],
-                'generator': []
-            },
-            'generator': {
-                'line': [],
-                'transformer': [],
-                'generator': []
-            }
-        }
-    }
-    # --- Simulate first-level failures on lines ---
+    # ======================[ LINES ]======================
+    # ------------------ Simulate first-level failures ------------------
     for idx, line in enumerate(grid.lines):
         line.active = False
         cases += 1
         print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-        results['single']['line'].append({
-            'element': {'type': 'line', 'id': idx},
+        result = {
+            'level': 'single',
+            'type_combo': 'line',
+            'elements': [
+                {'type': 'line', 'id': idx}
+            ],
             'gce.powerflow_converged': pf_converged,
             'gce.run_powerflow_converged': run_pf_converged,
             'stability': stability,
             'islands': detect_islands(grid)
-        })
+        }
+
+        save_result(result, path='results.jsonl')
 
         # 1) Second-level failures on lines
         for idx2, line2 in enumerate(grid.lines):
@@ -304,7 +326,9 @@ if __name__ == "__main__":
 
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-                results['double']['line']['line'].append({
+                result = {
+                    'level': 'double',
+                    'type_combo': ('line', 'line'),
                     'elements': [
                         {'type': 'line', 'id': idx},
                         {'type': 'line', 'id': idx2}
@@ -313,7 +337,8 @@ if __name__ == "__main__":
                     'gce.run_powerflow_converged': run_pf_converged,
                     'stability': stability,
                     'islands': detect_islands(grid)
-                })
+                }
+                save_result(result, path='results.jsonl')
                 line2.active = True
 
         # 2) Second-level failures on transformers
@@ -323,7 +348,9 @@ if __name__ == "__main__":
             print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-            results['double']['line']['transformer'].append({
+            results = {
+                'level': 'double',
+                'type_combo': ('line', 'transformer'),
                 'elements': [
                     {'type': 'line', 'id': idx},
                     {'type': 'transformer', 'id': idx2}
@@ -332,7 +359,9 @@ if __name__ == "__main__":
                 'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
-            })
+            }
+            save_result(results, path='results.jsonl')
+
             transformer.active = True
 
         # 3) Second-level failures on generators
@@ -342,7 +371,9 @@ if __name__ == "__main__":
             print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-            results['double']['line']['generator'].append({
+            results = {
+                'level': 'double',
+                'type_combo': ('line', 'generator'),
                 'elements': [
                     {'type': 'line', 'id': idx},
                     {'type': 'generator', 'id': idx2}
@@ -351,7 +382,9 @@ if __name__ == "__main__":
                 'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
-            })
+            }
+            save_result(results, path='results.jsonl')
+
             generator.active = True
         line.active = True
 
@@ -359,33 +392,40 @@ if __name__ == "__main__":
     check(grid)
     print('Lines done')
 
+    # ======================[ TRANSFORMERS ]======================
+    # ------------------ Simulate first-level failures ------------------
 
-
-    # --- Simulate first-level failures on transformers ---
     for idx, transformer in enumerate(grid.transformers2w):
         transformer.active = False
         cases += 1
         print("First_level_Transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-        results['single']['transformer'].append({
-            'element': {'type': 'transformer', 'id': idx},
+        result = {
+            'level': 'single',
+            'type_combo': 'transformer',
+            'elements': [
+                {'type': 'transformer', 'id': idx}
+            ],
             'gce.powerflow_converged': pf_converged,
             'gce.run_powerflow_converged': run_pf_converged,
             'stability': stability,
             'islands': detect_islands(grid)
-        })
-
+        }
+        save_result(result, path='results.jsonl')
 
         # 1) Second-level failures on transformers
         for idx2, transformer2 in enumerate(grid.transformers2w):
             if idx2 != idx:
                 transformer2.active = False
                 cases += 1
-                print("Second_level_Transformers-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+                print("Second_level_Transformers-transformers:", cases, '/', total_cases,
+                      f'({cases / total_cases * 100:.2f}%)')
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-                results['double']['transformer']['transformer'].append({
+                result = {
+                    'level': 'double',
+                    'type_combo': ('transformer', 'transformer'),
                     'elements': [
                         {'type': 'transformer', 'id': idx},
                         {'type': 'transformer', 'id': idx2}
@@ -394,7 +434,9 @@ if __name__ == "__main__":
                     'gce.run_powerflow_converged': run_pf_converged,
                     'stability': stability,
                     'islands': detect_islands(grid)
-                })
+                }
+                save_result(result, path='results.jsonl')
+
                 transformer2.active = True
 
         # 2) Second-level failures on lines
@@ -404,7 +446,9 @@ if __name__ == "__main__":
             print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-            results['double']['transformer']['line'].append({
+            result = {
+                'level': 'double',
+                'type_combo': ('transformer', 'line'),
                 'elements': [
                     {'type': 'transformer', 'id': idx},
                     {'type': 'line', 'id': idx2}
@@ -413,17 +457,22 @@ if __name__ == "__main__":
                 'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
-            })
+            }
+            save_result(result, path='results.jsonl')
+
             line.active = True
 
         # 3) Second-level failures on generators
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
             cases += 1
-            print("Second_level_Transformers-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+            print("Second_level_Transformers-generators:", cases, '/', total_cases,
+                  f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-            results['double']['transformer']['generator'].append({
+            result = {
+                'level': 'double',
+                'type_combo': ('transformer', 'generator'),
                 'elements': [
                     {'type': 'transformer', 'id': idx},
                     {'type': 'generator', 'id': idx2}
@@ -432,26 +481,35 @@ if __name__ == "__main__":
                 'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
-            })
+            }
+            save_result(result, path='results.jsonl')
+
             generator.active = True
         transformer.active = True
     check(grid)
     print('Transformers done')
 
-    # --- Simulate first-level failures on generators ---
+    # ======================[ GENERATORS ]======================
+    # ------------------ Simulate first-level failures ------------------
+
     for idx, generator in enumerate(grid.generators):
         generator.active = False
         cases += 1
         print("First_level_Generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-        results['single']['generator'].append({
-            'element': {'type': 'generator', 'id': idx},
+        result = {
+            'level': 'single',
+            'type_combo': 'generator',
+            'elements': [
+                {'type': 'generator', 'id': idx}
+            ],
             'gce.powerflow_converged': pf_converged,
             'gce.run_powerflow_converged': run_pf_converged,
             'stability': stability,
             'islands': detect_islands(grid)
-        })
+        }
+        save_result(result, path='results.jsonl')
 
         # 1) Second-level failures on lines
         for idx2, line in enumerate(grid.lines):
@@ -460,7 +518,9 @@ if __name__ == "__main__":
             print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-            results['double']['generator']['line'].append({
+            result = {
+                'level': 'double',
+                'type_combo': ('generator', 'line'),
                 'elements': [
                     {'type': 'generator', 'id': idx},
                     {'type': 'line', 'id': idx2}
@@ -469,16 +529,21 @@ if __name__ == "__main__":
                 'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
-            })
+            }
+            save_result(result, path='results.jsonl')
+
             line.active = True
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
             cases += 1
-            print("Second_level_Generators-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+            print("Second_level_Generators-transformers:", cases, '/', total_cases,
+                  f'({cases / total_cases * 100:.2f}%)')
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-            results['double']['generator']['transformer'].append({
+            result = {
+                'level': 'double',
+                'type_combo': ('generator', 'transformer'),
                 'elements': [
                     {'type': 'generator', 'id': idx},
                     {'type': 'transformer', 'id': idx2}
@@ -487,17 +552,22 @@ if __name__ == "__main__":
                 'gce.run_powerflow_converged': run_pf_converged,
                 'stability': stability,
                 'islands': detect_islands(grid)
-            })
+            }
+            save_result(result, path='results.jsonl')
+
             transformer.active = True
         # 3) Second-level failures on generators
         for idx2, generator2 in enumerate(grid.generators):
             if idx2 != idx:
                 generator2.active = False
                 cases += 1
-                print("Second_level_Generators-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+                print("Second_level_Generators-generators:", cases, '/', total_cases,
+                      f'({cases / total_cases * 100:.2f}%)')
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
-                results['double']['generator']['generator'].append({
+                result = {
+                    'level': 'double',
+                    'type_combo': ('generator', 'generator'),
                     'elements': [
                         {'type': 'generator', 'id': idx},
                         {'type': 'generator', 'id': idx2}
@@ -506,15 +576,13 @@ if __name__ == "__main__":
                     'gce.run_powerflow_converged': run_pf_converged,
                     'stability': stability,
                     'islands': detect_islands(grid)
-                })
+                }
+                save_result(result, path='results.jsonl')
+
                 generator2.active = True
         generator.active = True
     # Ensure all components are active again
     check(grid)
     print('Generators done')
 
-    with open('results.json', 'w', encoding='utf-8') as f:
-        # 2) Dump the `results` dict as pretty-printed JSON
-        json.dump(results, f, ensure_ascii=False, indent=4)
-
-    print("Results saved to results.json")
+    print("Results saved to results.jsonl")
