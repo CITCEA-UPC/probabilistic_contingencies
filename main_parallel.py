@@ -390,7 +390,7 @@ if __name__ == "__main__":
     check(grid)
     print('All done, writing results.json...')
 
-    with open('results.json', 'w', encoding='utf-8') as f:
+    with open('results_parallel.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
 
     print("Results saved to results.json")
