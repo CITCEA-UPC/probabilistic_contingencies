@@ -113,6 +113,10 @@ pip-selfcheck.json
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/modules.xml
+.idea/misc.xml
+.idea/probabilistic_contingencies.iml
+.idea
 
 # AWS User-specific
 .idea/**/aws.xml
