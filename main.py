@@ -12,10 +12,15 @@ from stability_analysis.preprocess import preprocess_data, read_data, process_ra
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow, slack_bus, fill_d_grid_after_powerflow
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from stability_analysis.preprocess import parameters
-
+from GridCalEngine.Simulations.PowerFlow.power_flow_worker import multi_island_pf_nc
 from stability_analysis.state_space import build_ss, generate_NET, generate_elements
 from stability_analysis.analysis import small_signal
 import warnings
+
+
+import threading
+
+file_lock = threading.Lock()
 
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
@@ -27,7 +32,16 @@ def detect_islands(grid):
     and returns True if there is more than one connected component
     (i.e. at least one island), False otherwise.
     """
-    graph = nx.Graph()
+
+    nc = gce.compile_numerical_circuit_at(grid, t_idx=None)
+    '''
+    options = gce.PowerFlowOptions()
+    results = multi_island_pf_nc(nc, options=options)
+    #print(results)'''
+    islas_list = nc.split_into_islands()
+
+
+    '''graph = nx.Graph()
     # Add buses
     for bus in grid.buses:
         graph.add_node(bus)
@@ -39,7 +53,8 @@ def detect_islands(grid):
             graph.add_edge(i, j)
     # Count components
     components = list(nx.connected_components(graph))
-    return len(components) > 1
+    return len(components) > 1'''
+    return len(islas_list) > 1
 
 
 def check_line_overloads(results, grid):
@@ -193,8 +208,9 @@ def save_result(result, path='results.jsonl'):
         # Fallback: convert any unknown object to string
         return str(obj)
 
-    with open(path, 'a', encoding='utf-8') as f:
-        f.write(json.dumps(result, default=to_serializable) + '\n')
+    with file_lock:
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(result, default=to_serializable) + '\n')
 
 
 def read_results_jsonl(route='results.jsonl'):
@@ -304,6 +320,7 @@ if __name__ == "__main__":
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         result = {
+            'case_id': cases,
             'level': 'single',
             'type_combo': 'line',
             'elements': [
@@ -327,6 +344,7 @@ if __name__ == "__main__":
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 result = {
+                    'case_id': cases,
                     'level': 'double',
                     'type_combo': ('line', 'line'),
                     'elements': [
@@ -349,6 +367,7 @@ if __name__ == "__main__":
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results = {
+                'case_id': cases,
                 'level': 'double',
                 'type_combo': ('line', 'transformer'),
                 'elements': [
@@ -372,6 +391,7 @@ if __name__ == "__main__":
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results = {
+                'case_id': cases,
                 'level': 'double',
                 'type_combo': ('line', 'generator'),
                 'elements': [
@@ -402,6 +422,7 @@ if __name__ == "__main__":
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         result = {
+            'case_id': cases,
             'level': 'single',
             'type_combo': 'transformer',
             'elements': [
@@ -424,6 +445,7 @@ if __name__ == "__main__":
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 result = {
+                    'case_id': cases,
                     'level': 'double',
                     'type_combo': ('transformer', 'transformer'),
                     'elements': [
@@ -447,6 +469,7 @@ if __name__ == "__main__":
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
+                'case_id': cases,
                 'level': 'double',
                 'type_combo': ('transformer', 'line'),
                 'elements': [
@@ -471,6 +494,7 @@ if __name__ == "__main__":
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
+                'case_id': cases,
                 'level': 'double',
                 'type_combo': ('transformer', 'generator'),
                 'elements': [
@@ -499,6 +523,7 @@ if __name__ == "__main__":
         stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         result = {
+            'case_id': cases,
             'level': 'single',
             'type_combo': 'generator',
             'elements': [
@@ -519,6 +544,7 @@ if __name__ == "__main__":
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
+                'case_id': cases,
                 'level': 'double',
                 'type_combo': ('generator', 'line'),
                 'elements': [
@@ -542,6 +568,7 @@ if __name__ == "__main__":
             stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
+                'case_id': cases,
                 'level': 'double',
                 'type_combo': ('generator', 'transformer'),
                 'elements': [
@@ -566,6 +593,7 @@ if __name__ == "__main__":
                 stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 result = {
+                    'case_id': cases,
                     'level': 'double',
                     'type_combo': ('generator', 'generator'),
                     'elements': [
