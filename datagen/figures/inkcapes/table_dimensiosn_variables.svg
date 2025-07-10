@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="table_dimensiosn_variables.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="true"
+     inkscape:zoom="0.7652427"
+     inkscape:cx="595.23599"
+     inkscape:cy="397.91297"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid234" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Livello 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#e6e6e6;fill-opacity:0.977778;stroke:none;stroke-width:2.91677;stroke-dasharray:none"
+       id="rect1583"
+       width="42.975613"
+       height="125.51163"
+       x="88.287857"
+       y="52.749332"
+       inkscape:export-filename="table_dimensiosn_variables.pdf"
+       inkscape:export-xdpi="320"
+       inkscape:export-ydpi="320" />
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.468232;stroke-dasharray:none"
+       d="M 1.5557615,53.072727 207.62352,52.899916 Z"
+       id="path1341" />
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.468232;stroke-dasharray:none"
+       d="M 1.5557598,178.63693 207.62352,178.46412 Z"
+       id="path1341-66" />
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.364;stroke-dasharray:none"
+       d="M 3.6303408,70.929507 205.54894,70.75666 Z"
+       id="path1341-6" />
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.367;stroke-dasharray:none"
+       d="M 3.6303419,132.00291 205.54894,131.83006 Z"
+       id="path1341-6-0" />
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.367;stroke-dasharray:none"
+       d="M 3.7599623,106.58026 155.75903,106.38119 Z"
+       id="path1341-6-6" />
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.366596;stroke-dasharray:none"
+       d="M 91.205767,88.751788 205.54884,88.579409 Z"
+       id="path1341-6-7" />
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.459999;stroke-dasharray:none"
+       x="25.931318"
+       y="58.259022"
+       id="text1367"><tspan
+         sodipodi:role="line"
+         id="tspan1365"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="25.931318"
+         y="58.259022">Variables associated to</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="25.931318"
+         y="63.110901"
+         id="tspan1369">each non-independent</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="25.931318"
+         y="67.962784"
+         id="tspan1371">dimension</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.459999;stroke-dasharray:none"
+       x="147.86345"
+       y="58.259022"
+       id="text1367-13"><tspan
+         sodipodi:role="line"
+         id="tspan1365-3"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="147.86345"
+         y="58.259022">Variables </tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="147.86345"
+         y="63.110901"
+         id="tspan1371-12">associated to</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="147.86345"
+         y="67.962784"
+         id="tspan5127">each dimension</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.459999;stroke-dasharray:none"
+       x="68.622597"
+       y="60.684372"
+       id="text1367-1"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="68.622597"
+         y="60.684372"
+         id="tspan1369-9">Non-independent</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="68.622597"
+         y="65.536255"
+         id="tspan1371-1">dimensions</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.459999;stroke-dasharray:none"
+       x="188.74397"
+       y="60.684372"
+       id="text1367-1-1"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="188.74397"
+         y="60.684372"
+         id="tspan1369-9-0">Non-independent</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="188.74397"
+         y="65.536255"
+         id="tspan1371-1-8">variables</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.459999;stroke-dasharray:none"
+       x="109.89711"
+       y="60.346149"
+       id="text1367-1-6"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="109.89711"
+         y="60.346149"
+         id="tspan1371-1-3">Dimensions</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Bold';fill:#000000;stroke:none;stroke-width:0.46"
+         x="109.89711"
+         y="65.198029"
+         id="tspan1446">of the space</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="25.812893"
+       y="84.823898"
+       id="text1619"><tspan
+         sodipodi:role="line"
+         id="tspan1617"
+         style="stroke-width:0.364"
+         x="25.812893"
+         y="84.823898">Power absorbed</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="25.812893"
+         y="89.674599"
+         id="tspan1621">by each load</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="25.812893"
+         y="94.530098"
+         id="tspan1623">(P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077">Li</tspan> ∀i ∈ <tspan
+   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Monotype Corsiva';-inkscape-font-specification:'Monotype Corsiva Italic'"
+   id="tspan3091">L</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="147.86156"
+       y="75.910309"
+       id="text1619-6"><tspan
+         sodipodi:role="line"
+         id="tspan1617-5"
+         style="stroke-width:0.364"
+         x="147.86156"
+         y="75.910309">Power injected</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="147.86156"
+         y="80.761009"
+         id="tspan1621-9">by each SG</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="147.86156"
+         y="85.616508"
+         id="tspan1623-6">(P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077-9">SGi</tspan> ∀i ∈ <tspan
+   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Monotype Corsiva';-inkscape-font-specification:'Monotype Corsiva Italic'"
+   id="tspan3091-4">S</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="147.86156"
+       y="93.658249"
+       id="text1619-6-5"><tspan
+         sodipodi:role="line"
+         id="tspan1617-5-3"
+         style="stroke-width:0.364"
+         x="147.86156"
+         y="93.658249">Power injected</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="147.86156"
+         y="98.508949"
+         id="tspan1621-9-1">by each CIG</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="147.86156"
+         y="103.36445"
+         id="tspan1623-6-2">(P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077-9-5">CIGi</tspan> ∀i ∈ <tspan
+   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Monotype Corsiva';-inkscape-font-specification:'Monotype Corsiva Italic'"
+   id="tspan3091-4-8">C</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;line-height:0;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="147.81609"
+       y="111.92279"
+       id="text1619-6-5-1"><tspan
+         sodipodi:role="line"
+         id="tspan1617-5-3-3"
+         style="line-height:1.25;stroke-width:0.364"
+         x="147.81609"
+         y="111.92279">Power injected</tspan><tspan
+         sodipodi:role="line"
+         style="line-height:1.25;stroke-width:0.364"
+         x="147.81609"
+         y="116.77349"
+         id="tspan1621-9-1-7">by each</tspan><tspan
+         sodipodi:role="line"
+         style="line-height:1.25;stroke-width:0.364"
+         x="147.81609"
+         y="121.62419"
+         id="tspan4481">GFOR-CIG</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:2;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="147.81609"
+         y="127.9349"
+         id="tspan4485">(P<tspan
+   style="font-size:65%;line-height:2;baseline-shift:sub"
+   id="tspan3077-9-5-3">CIGi</tspan>   ∀i ∈ <tspan
+   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:2;font-family:'Monotype Corsiva';-inkscape-font-specification:'Monotype Corsiva Italic'"
+   id="tspan3091-4-8-3">C</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="64.403473"
+       y="84.844154"
+       id="text1619-5"><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="64.403473"
+         y="84.844154"
+         id="tspan1621-3">Total power</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="64.403473"
+         y="89.694855"
+         id="tspan3868">demand</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="64.403473"
+         y="94.545555"
+         id="tspan1623-3">(P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077-3">D</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="109.91701"
+       y="75.910812"
+       id="text1619-5-1"><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.91701"
+         y="75.910812"
+         id="tspan1621-3-5">Total power</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.91701"
+         y="80.761513"
+         id="tspan3868-1">injected by SGs</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.91701"
+         y="85.612213"
+         id="tspan1623-3-6">(P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077-3-5">SG</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="109.91701"
+       y="93.73439"
+       id="text1619-5-1-3"><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.91701"
+         y="93.73439"
+         id="tspan1621-3-5-4">Total power</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.91701"
+         y="98.585091"
+         id="tspan3868-1-6">injected by CIGs</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.91701"
+         y="103.43579"
+         id="tspan1623-3-6-6">(P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077-3-5-6">CIG</tspan>)</tspan></text>
+    <g
+       id="g4171"
+       transform="translate(-1.0583333)">
+      <g
+         id="g4099"
+         transform="matrix(0.44062056,0,0,0.44062056,57.556622,78.191885)">
+        <g
+           id="g4115">
+          <circle
+             style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.46;stroke-dasharray:none"
+             id="path236"
+             cx="58.431896"
+             cy="23.77037"
+             r="7"
+             inkscape:export-filename="simbolo sum.png"
+             inkscape:export-xdpi="320"
+             inkscape:export-ydpi="320" />
+          <text
+             xml:space="preserve"
+             style="font-size:6.35px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.16"
+             x="58.430347"
+             y="21.778965"
+             id="text292"><tspan
+               sodipodi:role="line"
+               id="tspan290"
+               style="fill:#000000;stroke:none;stroke-width:0.16"
+               x="58.430347"
+               y="21.778965">+</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:6.35px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.16"
+             x="58.430347"
+             y="30.017849"
+             id="text292-4"><tspan
+               sodipodi:role="line"
+               id="tspan290-5"
+               style="fill:#000000;stroke:none;stroke-width:0.16"
+               x="58.430347"
+               y="30.017849">+</tspan></text>
+        </g>
+      </g>
+      <path
+         style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.202685;stroke-dasharray:none"
+         d="m 83.244557,91.669622 2.601498,5.709718 5.377502,0.08644"
+         id="path1198-2"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.174515;stroke-dasharray:none"
+         d="m 80.274073,89.023059 h -3.727"
+         id="path1285" />
+      <path
+         style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.202685;stroke-dasharray:none"
+         d="M 83.34124,85.582618 85.942738,79.8729 91.32024,79.78646"
+         id="path1198-2-4"
+         sodipodi:nodetypes="ccc" />
+    </g>
+    <g
+       id="g4171-4"
+       transform="matrix(-1,0,0,1,252.56183,17.854605)">
+      <g
+         id="g4099-9"
+         transform="matrix(0.44062056,0,0,0.44062056,57.556622,78.191885)">
+        <g
+           id="g4115-5">
+          <circle
+             style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.46;stroke-dasharray:none"
+             id="path236-7"
+             cx="58.431896"
+             cy="23.77037"
+             r="7"
+             inkscape:export-filename="simbolo sum.png"
+             inkscape:export-xdpi="320"
+             inkscape:export-ydpi="320" />
+          <text
+             xml:space="preserve"
+             style="font-size:6.35px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.16"
+             x="58.430347"
+             y="21.778965"
+             id="text292-8"><tspan
+               sodipodi:role="line"
+               id="tspan290-0"
+               style="fill:#000000;stroke:none;stroke-width:0.16"
+               x="58.430347"
+               y="21.778965">+</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:7.20575px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.16"
+             x="58.430347"
+             y="30.017849"
+             id="text292-4-7"><tspan
+               sodipodi:role="line"
+               id="tspan290-5-6"
+               style="font-size:7.20575px;fill:#000000;stroke:none;stroke-width:0.16"
+               x="58.430347"
+               y="30.017849">-</tspan></text>
+        </g>
+      </g>
+      <path
+         style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.202685;stroke-dasharray:none"
+         d="m 83.244557,91.669622 2.601498,5.709718 5.377502,0.08644"
+         id="path1198-2-6"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.174515;stroke-dasharray:none"
+         d="m 80.274073,89.023059 h -3.727"
+         id="path1285-8" />
+      <path
+         style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.202685;stroke-dasharray:none"
+         d="M 83.34124,85.582618 85.942738,79.8729 91.32024,79.78646"
+         id="path1198-2-4-6"
+         sodipodi:nodetypes="ccc" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="109.83932"
+       y="112.66985"
+       id="text1619-5-1-3-1"><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.83932"
+         y="112.66985"
+         id="tspan1621-3-5-4-6">Percentage of power</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.83932"
+         y="117.52055"
+         id="tspan3868-1-6-4">injected by </tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.83932"
+         y="122.37125"
+         id="tspan4475">GFOR-CIGs</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.83932"
+         y="127.22195"
+         id="tspan1623-3-6-6-0">(%P<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan3077-3-5-6-6">GFOR-CIG</tspan>)</tspan></text>
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.364;stroke-dasharray:none"
+       d="M 3.6303448,147.35406 205.54894,147.18121 Z"
+       id="path1341-6-0-6" />
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="109.78059"
+       y="138.20923"
+       id="text1619-5-1-3-1-9"><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.78059"
+         y="138.20923"
+         id="tspan4475-8">Controller parameter</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.78059"
+         y="143.05992"
+         id="tspan1623-3-6-6-0-9">(τ<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan4828">1</tspan>)</tspan></text>
+    <path
+       style="fill:none;fill-opacity:0.977778;stroke:#000000;stroke-width:0.364;stroke-dasharray:none"
+       d="M 3.606457,162.83644 205.52504,162.66359 Z"
+       id="path1341-6-0-6-8" />
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="109.7567"
+       y="150.33516"
+       id="text1619-5-1-3-1-9-6"><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.7567"
+         y="150.33516"
+         id="tspan1623-3-6-6-0-9-3">.</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.7567"
+         y="155.18788"
+         id="tspan4986">.</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.7567"
+         y="160.04062"
+         id="tspan4988">.</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="109.71487"
+       y="169.33299"
+       id="text1619-5-1-3-1-9-6-8"><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.364"
+         x="109.71487"
+         y="169.33299"
+         id="tspan4475-8-9-4">Controller parameter</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="109.71487"
+         y="174.18369"
+         id="tspan1623-3-6-6-0-9-3-8">(τ<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan4828-1-2">N</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.46944px;line-height:2.5;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="147.82228"
+       y="125.58377"
+       id="text4493"><tspan
+         sodipodi:role="line"
+         id="tspan4491"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.46944px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="147.82228"
+         y="125.58377">GFOR</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.46944px;line-height:2.5;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="183.20738"
+       y="112.92038"
+       id="text4493-2"><tspan
+         sodipodi:role="line"
+         id="tspan4491-9"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.46944px;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="183.20738"
+         y="112.92038">GFOL</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.88056px;line-height:0;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook';text-align:center;text-anchor:middle;fill:#000000;fill-opacity:0.977778;stroke:none;stroke-width:0.364;stroke-dasharray:none"
+       x="188.68997"
+       y="99.487961"
+       id="text1619-6-5-1-5"><tspan
+         sodipodi:role="line"
+         id="tspan1617-5-3-3-5"
+         style="line-height:1.25;stroke-width:0.364"
+         x="188.68997"
+         y="99.487961">Power injected</tspan><tspan
+         sodipodi:role="line"
+         style="line-height:1.25;stroke-width:0.364"
+         x="188.68997"
+         y="104.33866"
+         id="tspan1621-9-1-7-9">by each</tspan><tspan
+         sodipodi:role="line"
+         style="line-height:1.25;stroke-width:0.364"
+         x="188.68997"
+         y="109.18936"
+         id="tspan4481-7">GFOL-CIG</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:2;font-family:'Century Schoolbook';-inkscape-font-specification:'Century Schoolbook Italic';stroke-width:0.364"
+         x="188.68997"
+         y="115.50007"
+         id="tspan4485-2">(P<tspan
+   style="font-size:65%;line-height:2;baseline-shift:sub"
+   id="tspan3077-9-5-3-5">CIGi</tspan>   ∀i ∈ <tspan
+   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:2;font-family:'Monotype Corsiva';-inkscape-font-specification:'Monotype Corsiva Italic'"
+   id="tspan3091-4-8-3-7">C</tspan>)</tspan></text>
+  </g>
+</svg>

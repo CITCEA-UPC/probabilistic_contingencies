@@ -1,0 +1,129 @@
+
+===========================================================================================================================================
+
+
+====================  Bus report  ====================
+Node BUS1 (no 0)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.040 @ -0.000               71.826        26.602         0.000         0.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS1        BUS4        T1               71.804        26.580
+
+Node BUS2 (no 1)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.025 @ 9.209               163.000         6.536         0.000         0.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS2        BUS7        T2              162.990         6.525
+
+Node BUS3 (no 2)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.025 @ 4.596                85.000       -10.961         0.000         0.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS3        BUS9        T3               84.990       -10.971
+
+Node BUS4 (no 3)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.026 @ -2.221                0.000         0.000         0.000         0.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS4        BUS1        T1              -71.804       -23.458
+BUS4        BUS5        Line1            40.955        22.651
+BUS4        BUS6        Line2            30.770         0.784
+BUS4        s7          Flt               0.056         0.000
+
+Node BUS5 (no 4)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 0.996 @ -3.990                0.000         0.000       125.000        50.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS5        BUS4        Line1           -40.697       -38.499
+BUS5        BUS7        Line3           -84.295       -11.493
+
+Node BUS6 (no 5)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.013 @ -3.693                0.000         0.000        90.000        30.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS6        BUS4        Line2           -30.600       -16.333
+BUS6        BUS9        Line4           -59.401       -13.645
+
+Node BUS7 (no 6)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.026 @ 3.650                 0.000         0.000         0.000         0.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS7        BUS2        T2             -162.990         9.303
+BUS7        BUS5        Line3            86.588        -8.454
+BUS7        BUS8        Line6            76.391        -0.860
+
+Node BUS8 (no 7)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.016 @ 0.663                 0.000         0.000       100.000        35.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS8        BUS7        Line6           -75.915       -10.666
+BUS8        BUS9        Line5           -24.098       -24.311
+
+Node BUS9 (no 8)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 1.032 @ 1.898                 0.000         0.000         0.000         0.000         0.000         0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+BUS9        BUS3        T3              -84.990        15.067
+BUS9        BUS6        Line4            60.787       -18.167
+BUS9        BUS8        Line5            24.192         3.089
+
+Node s7 (no 9)
+Summary
+                    V (pu, deg)            Pgen (MW)   Qgen (Mvar)    Pload (MW)  Qload (Mvar)   Pshunt (MW) Qshunt (Mvar)
+                 0.000 @ -2.221                0.000         0.000         0.000         0.000         0.000        -0.000
+Detail
+Source      Destination Component        P (MW)      Q (Mvar)            
+s7          BUS4        Flt              -0.000        -0.000
+
+
+====================  Generation report  ====================
+Bus                  Component            Type          Vbase (kV rms LL)                 V (pu, deg)                P (MW)      Q (Mvar)              Vint (pu, deg)                   I (kA peak LG, deg)    
+BUS1                 SM1                  Swing                    24.000               1.040 @ -0.000               71.826        26.602               1.149 @ 11.201                     60.134 @ -20.323      
+BUS2                 SM2                  PV                       18.000               1.025 @ 9.209               163.000         6.536               1.462 @ 51.087                    129.947 @ 6.913        
+BUS3                 SM3                  PV                       15.500               1.025 @ 4.596                85.000       -10.961               1.228 @ 44.263                     68.270 @ 11.943       
+                                                                                                               ------------  ------------
+Total [    3 generator(s)]:                                                                                         319.826        22.178
+
+
+====================  Load report  ====================
+Bus                  Component              Vbase (kV rms LL)                 V (pu, deg)                P (MW)      Q (Mvar)
+BUS5                 Ld5                              230.000               0.996 @ -3.990              125.000        50.000
+BUS6                 Ld6                              230.000               1.013 @ -3.693               90.000        30.000
+BUS8                 Ld8                              230.000               1.016 @ 0.663               100.000        35.000
+                                                                                                   ------------  ------------
+Total [    3 elements(s)]:                                                                              315.000       115.000
+
+
+====================  Shunt report  ====================
+Bus                  Component              Vbase (kV rms LL)                 V (pu, deg)                P (MW)      Q (Mvar)
+s7                   GND1                             230.000               0.000 @ -2.221                0.000        -0.000
+                                                                                                   ------------  ------------
+Total [    1 elements(s)]:                                                                                0.000        -0.000
+
+
+
+============================  Summary  ============================
+                                 P (MW)            Q (Mvar)      
+Generation total               319.826              22.178
+Load total                     315.000             115.000
+Shunt total                      0.000              -0.000
+Difference                       4.826             -92.822
+

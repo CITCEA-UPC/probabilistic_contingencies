@@ -1,0 +1,8 @@
+*.asv
+/slprj
+01_data/validation_118.pptx
+00_tool/Non Linear Models/models/
+00_tool/Linear Model/models/
+~$*
+*.slxc
+01_data/raw/

@@ -1,0 +1,8 @@
+function voltage_droop = build_voltage_droop(x,u,y,k,tau)
+    A  = [-1/tau];
+    B  = [0 1];
+    C  = [-k/tau];
+    D  = [+k 0];
+
+    voltage_droop   = ss(A,B,C,D,'StateName',x,'inputname',u,'outputname',y);
+end
