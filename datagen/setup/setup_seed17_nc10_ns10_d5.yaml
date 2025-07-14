@@ -1,0 +1,11 @@
+n_pf: 1
+voltage_profile: true
+v_min_v_max_delta_v: [0.95, 1.05, 0.02]
+loads_power_factor: 0.98
+generators_power_factor: 0.98
+n_samples: 10
+n_cases: 10
+rel_tolerance: 0.01
+max_depth: 5
+seed: 17
+grid_name: IEEE118

@@ -1,0 +1,17 @@
+environment:
+  COMPUTING_UNITS: 10
+generators_power_factor: 0.98
+grid_name: IEEE118
+loads_power_factor: 0.98
+max_depth: 1
+n_cases: 3
+n_pf: 1
+n_samples: 100
+rel_tolerance: 0.01
+seed: 16
+v_min_v_max_delta_v:
+- 0.95
+- 1.05
+- 0.02
+voltage_profile: null
+v_set: true

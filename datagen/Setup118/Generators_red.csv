@@ -1,0 +1,328 @@
+﻿Generator Name;Node of connection;Category;Units;Max Capacity (MW);Commit;Min Stable Level (MW)
+Biomass 01;node012;1. Committed DA;1;3;0;0,9
+Biomass 02;node012;1. Committed DA;1;3;0;0,9
+Biomass 03;node103;1. Committed DA;1;1,2;0;0,36
+Biomass 04;node103;1. Committed DA;1;1,2;0;0,36
+Biomass 05;node012;1. Committed DA;1;1,3;0;0,26
+Biomass 06;node012;1. Committed DA;1;1,3;0;0,26
+Biomass 07;node012;1. Committed DA;1;3;0;0,6
+Biomass 08;node012;1. Committed DA;1;1,35;0;0,27
+Biomass 09;node012;1. Committed DA;1;1,35;0;0,27
+Biomass 10;node012;1. Committed DA;1;1,35;0;0,27
+Biomass 11;node012;1. Committed DA;1;0,71;0;0,14
+Biomass 12;node012;1. Committed DA;1;0,71;0;0,14
+Biomass 13;node012;1. Committed DA;1;0,71;0;0,14
+Biomass 14;node012;1. Committed DA;1;1,57;0;0,31
+Biomass 15;node012;1. Committed DA;1;0,65;0;0,13
+Biomass 16;node012;1. Committed DA;1;0,65;0;0,13
+Biomass 17;node012;1. Committed DA;1;0,65;0;0,13
+Biomass 18;node012;1. Committed DA;1;0,65;0;0,13
+Biomass 19;node012;1. Committed DA;1;0,45;0;0,09
+Biomass 20;node012;1. Committed DA;1;0,45;0;0,09
+Biomass 21;node012;1. Committed DA;1;0,45;0;0,09
+Biomass 22;node012;1. Committed DA;1;0,45;0;0,09
+Biomass 23;node012;1. Committed DA;1;1;0;0,2
+Biomass 24;node012;1. Committed DA;1;1;0;0,2
+Biomass 25;node012;1. Committed DA;1;1;0;0,2
+Biomass 26;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 27;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 28;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 29;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 30;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 31;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 32;node012;1. Committed DA;1;1,9;0;0,57
+Biomass 33;node103;1. Committed DA;1;1,6;0;0,48
+Biomass 34;node103;1. Committed DA;1;1,6;0;0,48
+Biomass 35;node103;1. Committed DA;1;1,6;0;0,48
+Biomass 36;node103;1. Committed DA;1;1,6;0;0,48
+Biomass 37;node103;1. Committed DA;1;0,95;0;0,28
+Biomass 38;node103;1. Committed DA;1;0,95;0;0,19
+Biomass 39;node103;1. Committed DA;1;0,95;0;0,19
+Biomass 40;node103;1. Committed DA;1;0,95;0;0,19
+Biomass 41;node103;1. Committed DA;1;1,88;0;0,56
+Biomass 42;node103;1. Committed DA;1;1,88;0;0,56
+Biomass 43;node103;1. Committed DA;1;3,75;0;1,12
+Biomass 44;node103;1. Committed DA;1;2,29;0;0,69
+Biomass 45;node103;1. Committed DA;1;2,29;0;0,69
+Biomass 46;node103;1. Committed DA;1;1,2;0;0,36
+Biomass 47;node103;1. Committed DA;1;3;0;0,9
+Biomass 48;node103;1. Committed DA;1;3;0;0,9
+Biomass 49;node103;1. Committed DA;1;1,6;0;0,32
+Biomass 50;node103;1. Committed DA;1;0,9;0;0,27
+Biomass 51;node103;1. Committed DA;1;0,9;0;0,18
+Biomass 52;node103;1. Committed DA;1;3;0;0,9
+Biomass 53;node034;1. Committed DA;1;3;0;0,6
+Biomass 54;node034;1. Committed DA;1;3;0;0,6
+Biomass 55;node034;1. Committed DA;1;3;0;0,6
+Biomass 56;node012;1. Committed DA;1;4,6;0;1,38
+Biomass 57;node012;1. Committed DA;1;3;0;0,9
+Biomass 58;node012;1. Committed DA;1;3;0;0,9
+Biomass 59;node012;1. Committed DA;1;4,6;0;1,38
+Biomass 60;node012;1. Committed DA;1;3;0;0,9
+Biomass 61;node103;1. Committed DA;1;1,88;0;0,56
+Biomass 62;node034;1. Committed DA;1;7,5;0;2,25
+CC NG 01;node012;1. Committed DA;1;41,5;0;41,08
+CC NG 03;node012;1. Committed DA;1;126,98;0;20
+CC NG 04;node012;1. Committed DA;1;320;0;160
+CC NG 05;node074;1. Committed DA;1;100;0;99
+CC NG 06;node012;1. Committed DA;1;13,5;0;4,05
+CC NG 07;node103;1. Committed DA;1;55,1;0;20
+CC NG 08;node112;1. Committed DA;1;14,3;0;4,29
+CC NG 09;node107;1. Committed DA;1;33;0;32,67
+CC NG 10;node036;1. Committed DA;1;71,51;0;21,45299911
+CC NG 11;node066;1. Committed DA;1;596,4;0;328,02
+CC NG 12;node046;1. Committed DA;1;150;0;60
+CC NG 13;node012;1. Committed DA;1;57,3;0;20
+CC NG 14;node049;1. Committed DA;1;164,75;0;65,9
+CC NG 15;node034;1. Committed DA;1;27;0;8,1
+CC NG 16;node012;1. Committed DA;1;943,5;0;503,86
+CC NG 17;node025;1. Committed DA;1;154,4;0;84,92
+CC NG 18;node113;1. Committed DA;1;619;0;306,4
+CC NG 19;node012;1. Committed DA;1;140;0;70,48
+CC NG 20;node025;1. Committed DA;1;25,8;0;25,54
+CC NG 21;node026;1. Committed DA;1;315;0;141,75
+CC NG 22;node026;1. Committed DA;1;677,8;0;385,59
+CC NG 23;node010;1. Committed DA;1;636;0;326,09
+CC NG 24;node025;1. Committed DA;1;672,3;0;302,54
+CC NG 25;node010;1. Committed DA;1;32,49;0;32,17
+CC NG 26;node010;1. Committed DA;1;655;0;262
+CC NG 27;node004;1. Committed DA;1;34,5;0;34,15
+CC NG 28;node100;1. Committed DA;1;181,5;0;99,82499695
+CC NG 29;node107;1. Committed DA;1;49,9;0;49,4
+CC NG 31;node089;1. Committed DA;1;336,5;0;185,07
+CC NG 32;node090;1. Committed DA;1;38,55;0;38,16
+CC NG 33;node090;1. Committed DA;1;24,88;0;24,63
+CC NG 34;node087;1. Committed DA;1;688,3;0;338,08
+CC NG 35;node089;1. Committed DA;1;595;0;298,29
+CC NG 36;node087;1. Committed DA;1;668;0;367,4
+CC NG 37;node065;1. Committed DA;1;636;0;298,19
+CC NG 38;node049;1. Committed DA;1;98,2;0;42,69
+CC NG 39;node018;1. Committed DA;1;247;0;244,53
+CC NG 40;node107;1. Committed DA;1;751,1;0;412,5
+CT NG 01;node006;2. Committed RT;1;25,4;-1;11,43
+CT NG 02;node018;2. Committed RT;1;25,4;-1;11,43
+CT NG 03;node004;2. Committed RT;1;24,75;-1;11,14
+CT NG 04;node004;2. Committed RT;1;24,75;-1;11,14
+CT NG 05;node004;2. Committed RT;1;49,9;-1;14,97
+CT NG 06;node006;2. Committed RT;1;49,9;-1;14,97
+CT NG 07;node006;2. Committed RT;1;49,9;-1;14,97
+CT NG 08;node008;2. Committed RT;1;50;-1;15
+CT NG 09;node008;2. Committed RT;1;50;-1;25
+CT NG 10;node008;2. Committed RT;1;50;-1;25
+CT NG 11;node010;2. Committed RT;1;50;-1;25
+CT NG 12;node010;2. Committed RT;1;50;-1;25
+CT NG 13;node006;2. Committed RT;1;21,6;-1;21,3
+CT NG 14;node006;2. Committed RT;1;21,6;-1;21,3
+CT NG 15;node025;2. Committed RT;1;21,6;-1;21,3
+CT NG 16;node025;2. Committed RT;1;49,9;-1;22,45
+CT NG 17;node004;2. Committed RT;1;6,9;-1;3,11
+CT NG 18;node004;2. Committed RT;1;3,9;-1;1,75
+CT NG 19;node018;2. Committed RT;1;3,9;-1;1,75
+CT NG 20;node025;2. Committed RT;1;6,9;-1;3,11
+CT NG 21;node085;2. Committed RT;1;100;-1;20
+CT NG 22;node091;2. Committed RT;1;100;-1;20
+CT NG 23;node091;2. Committed RT;1;100;-1;20
+CT NG 24;node100;2. Committed RT;1;100;-1;20
+CT NG 25;node100;2. Committed RT;1;100;-1;20
+CT NG 26;node100;2. Committed RT;1;100;-1;20
+CT NG 27;node107;2. Committed RT;1;1,05;-1;0
+CT NG 28;node100;2. Committed RT;1;44,02;-1;13,21
+CT NG 29;node107;2. Committed RT;1;0,6;-1;0
+CT NG 30;node090;2. Committed RT;1;18;-1;5,4
+CT NG 31;node107;2. Committed RT;1;1,54;-1;0
+CT NG 32;node107;2. Committed RT;1;1,6;-1;0
+CT NG 33;node107;2. Committed RT;1;1,3;-1;0
+CT NG 34;node100;2. Committed RT;1;100;-1;45
+CT NG 35;node100;2. Committed RT;1;100;-1;45
+CT NG 36;node100;2. Committed RT;1;100;-1;45
+CT NG 37;node107;2. Committed RT;1;1,3;-1;0
+CT NG 38;node090;2. Committed RT;1;9,5;-1;0
+CT NG 39;node112;2. Committed RT;1;1,3;-1;0
+CT NG 40;node112;2. Committed RT;1;3,1;-1;0,93
+CT NG 41;node040;2. Committed RT;1;54;-1;16,2
+CT NG 42;node036;2. Committed RT;1;82,4;-1;19,78
+CT NG 43;node062;2. Committed RT;1;25;-1;7,5
+CT NG 44;node055;2. Committed RT;1;60,35;-1;27,16
+CT NG 45;node055;2. Committed RT;1;60,35;-1;27,16
+CT NG 46;node026;2. Committed RT;1;180;-1;81
+CT NG 47;node026;2. Committed RT;1;180;-1;81
+CT NG 48;node026;2. Committed RT;1;180;-1;81
+CT NG 49;node026;2. Committed RT;1;180;-1;81
+CT NG 50;node111;2. Committed RT;1;49,96;-1;22,48
+CT NG 51;node085;2. Committed RT;1;8,57;-1;8,48
+CT NG 52;node085;2. Committed RT;1;10,71;-1;10,6
+CT NG 53;node085;2. Committed RT;1;10,71;-1;10,6
+CT NG 54;node111;2. Committed RT;1;49,9;-1;22,45
+CT NG 55;node091;2. Committed RT;1;15;-1;4,5
+CT NG 56;node111;2. Committed RT;1;46,9;-1;21,1
+CT NG 66;node111;2. Committed RT;1;45;-1;20,25
+CT NG 67;node111;2. Committed RT;1;45;-1;20,25
+CT NG 68;node111;2. Committed RT;1;46,7;-1;21,01
+CT NG 69;node111;2. Committed RT;1;49,5;-1;22,27
+CT NG 70;node111;2. Committed RT;1;44,02;-1;19,81
+CT NG 71;node111;2. Committed RT;1;44,02;-1;19,81
+CT NG 72;node112;2. Committed RT;1;50;-1;22,5
+CT NG 73;node112;2. Committed RT;1;50;-1;22,5
+CT NG 74;node042;2. Committed RT;1;42;-1;16,8
+CT NG 75;node049;2. Committed RT;1;50,4;-1;21,91
+CT Oil 01;node026;2. Committed RT;1;74,5;-1;22,35
+CT Oil 02;node010;2. Committed RT;1;74,5;-1;22,35
+CT Oil 03;node010;2. Committed RT;1;74,5;-1;22,35
+CT Oil 04;node054;2. Committed RT;1;71,2;-1;21,36
+CT Oil 05;node054;2. Committed RT;1;71,2;-1;21,36
+Geo 01;node055;1. Committed DA;1;22;0;11
+Hydro 01;node056;Hydro;1;75;1;0
+Hydro 02;node056;Hydro;1;75;1;0
+Hydro 03;node066;Hydro;1;77;1;0
+Hydro 04;node076;Hydro;1;77;1;0
+Hydro 05;node049;Hydro;1;82;1;0
+Hydro 06;node059;Hydro;1;1225,31;1;0
+Hydro 07;node059;Hydro;1;1225,31;1;0
+Hydro 08;node061;Hydro;1;1225,31;1;0
+Hydro 09;node061;Hydro;1;1225,31;1;0
+Hydro 10;node062;Hydro;1;1225,31;1;0
+Hydro 11;node076;Hydro;1;810,77;1;0
+Hydro 12;node077;Hydro;1;810,78;1;0
+Hydro 13;node059;Hydro;1;46,7;1;0
+Hydro 14;node099;Hydro;1;110;1;0
+Hydro 15;node080;Hydro;1;140;1;0
+Hydro 16;node032;Hydro;1;0,8;1;0
+Hydro 17;node112;Hydro;1;1,35;1;0
+Hydro 18;node112;Hydro;1;4,65;1;0
+Hydro 19;node116;Hydro;1;648,44;1;0
+Hydro 20;node077;Hydro;1;765,77;1;0
+Hydro 21;node099;Hydro;1;765,77;1;0
+Hydro 22;node099;Hydro;1;765,77;1;0
+Hydro 23;node069;Hydro;1;742,63;1;0
+Hydro 24;node069;Hydro;1;742,63;1;0
+Hydro 25;node061;Hydro;1;286,46;1;0
+Hydro 26;node116;Hydro;1;286,46;1;0
+Hydro 27;node080;Hydro;1;286,46;1;0
+Hydro 28;node080;Hydro;1;1116,06;1;0
+Hydro 29;node080;Hydro;1;1116,06;1;0
+Hydro 30;node034;Hydro;1;0,1;1;0
+Hydro 31;node034;Hydro;0;0,4;1;0
+Hydro 32;node034;Hydro;1;0,48;1;0
+Hydro 33;node069;Hydro;1;1112,39;1;0
+Hydro 34;node069;Hydro;1;1112,39;1;0
+Hydro 35;node034;Hydro;1;0,24;1;0
+Hydro 36;node034;Hydro;1;10,76;1;0
+Hydro 37;node036;Hydro;1;47,1;1;0
+Hydro 38;node034;Hydro;1;2,46;1;0
+Hydro 39;node034;Hydro;1;2,46;1;0
+Hydro 40;node065;Hydro;1;96,93;1;0
+Hydro 41;node046;Hydro;1;96,26;1;0
+Hydro 42;node042;Hydro;1;96,26;1;0
+Hydro 43;node099;Hydro;1;111,93;1;0
+ICE NG 01;node112;2. Committed RT;1;3,25;-1;0
+ICE NG 02;node056;2. Committed RT;1;8,4;-1;1,68
+ICE NG 03;node065;2. Committed RT;1;8,4;-1;1,68
+ICE NG 04;node065;2. Committed RT;1;8,4;-1;1,68
+ICE NG 05;node077;2. Committed RT;1;8,4;-1;1,68
+ICE NG 06;node077;2. Committed RT;1;8,4;-1;1,68
+ICE NG 07;node034;2. Committed RT;1;8,4;-1;1,68
+Solar 01;node032;Solar;1;746,76;1;0
+Solar 02;node092;Solar;1;369,26;1;0
+Solar 03;node054;Solar;1;264,47;1;0
+Solar 04;node032;Solar;1;4,85;1;0
+Solar 05;node018;Solar;1;0,12;1;0
+Solar 06;node018;Solar;1;6,33;1;0
+Solar 07;node018;Solar;1;0,21;1;0
+Solar 08;node018;Solar;1;2,51;1;0
+Solar 09;node018;Solar;1;12,85;1;0
+Solar 10;node015;Solar;1;9,71;1;0
+Solar 11;node015;Solar;1;1,98;1;0
+Solar 12;node015;Solar;1;1,54;1;0
+Solar 13;node015;Solar;1;0,26;1;0
+Solar 14;node015;Solar;1;11,71;1;0
+Solar 15;node015;Solar;1;10,53;1;0
+Solar 16;node015;Solar;1;6,6;1;0
+Solar 17;node015;Solar;1;3,01;1;0
+Solar 18;node015;Solar;1;12,35;1;0
+Solar 19;node015;Solar;1;0,1;1;0
+Solar 20;node015;Solar;1;10,08;1;0
+Solar 21;node015;Solar;1;18,42;1;0
+Solar 22;node015;Solar;1;8,98;1;0
+Solar 23;node015;Solar;1;0,29;1;0
+Solar 24;node015;Solar;1;1,45;1;0
+Solar 25;node015;Solar;1;1,94;1;0
+Solar 26;node015;Solar;1;1,8;1;0
+Solar 27;node015;Solar;1;1,13;1;0
+Solar 28;node015;Solar;1;8,03;1;0
+Solar 29;node015;Solar;1;8,63;1;0
+Solar 30;node015;Solar;1;4,5;1;0
+Solar 31;node104;Solar;1;116,03;1;0
+Solar 32;node104;Solar;1;173,97;1;0
+Solar 33;node104;Solar;1;132;1;0
+Solar 34;node110;Solar;1;125;1;0
+Solar 35;node104;Solar;1;45;1;0
+Solar 36;node110;Solar;1;128,9;1;0
+Solar 37;node112;Solar;1;26;1;0
+Solar 38;node112;Solar;1;20;1;0
+Solar 39;node112;Solar;1;1,75;1;0
+Solar 40;node112;Solar;1;1,75;1;0
+Solar 41;node112;Solar;1;1,75;1;0
+Solar 42;node112;Solar;1;1,75;1;0
+Solar 43;node112;Solar;1;1,75;1;0
+Solar 44;node112;Solar;1;1,75;1;0
+Solar 45;node112;Solar;1;1,75;1;0
+Solar 46;node112;Solar;1;1,75;1;0
+Solar 47;node112;Solar;1;1,75;1;0
+Solar 48;node112;Solar;1;1,75;1;0
+Solar 49;node112;Solar;1;1,1;1;0
+Solar 50;node112;Solar;1;4,69;1;0
+Solar 51;node112;Solar;1;15,65;1;0
+Solar 52;node112;Solar;1;10,64;1;0
+Solar 53;node112;Solar;1;16,09;1;0
+Solar 54;node112;Solar;1;9,2;1;0
+Solar 55;node112;Solar;1;20,01;1;0
+Solar 56;node112;Solar;1;20,07;1;0
+Solar 57;node112;Solar;1;6,84;1;0
+Solar 58;node112;Solar;1;8,01;1;0
+Solar 59;node105;Solar;1;12,42;1;0
+Solar 60;node105;Solar;1;15,89;1;0
+Solar 61;node105;Solar;1;1,97;1;0
+Solar 62;node069;Solar;1;99,9;1;0
+Solar 63;node019;Solar;1;60;1;0
+Solar 64;node015;Solar;1;21;1;0
+Solar 65;node019;Solar;1;64,8;1;0
+Solar 66;node018;Solar;1;123,5;1;0
+Solar 67;node018;Solar;1;40;1;0
+Solar 68;node105;Solar;1;96;1;0
+Solar 69;node105;Solar;1;123;1;0
+Solar 70;node092;Solar;1;150;1;0
+Solar 71;node100;Solar;1;104,99;1;0
+Solar 72;node105;Solar;1;25,2;1;0
+Solar 73;node069;Solar;1;25;1;0
+Solar 74;node076;Solar;1;25;1;0
+Solar 75;node055;Solar;1;30;1;0
+ST Coal 01;node018;1. Committed DA;1;20;0;19,8
+ST NG 01;node070;1. Committed DA;1;320;0;25,6
+ST NG 02;node072;1. Committed DA;1;325;0;26
+ST NG 03;node025;1. Committed DA;1;712;0;56,96
+ST NG 04;node019;1. Committed DA;1;62,6;0;61,97
+ST NG 05;node024;1. Committed DA;1;62,6;0;61,97
+ST NG 06;node092;1. Committed DA;1;110,25;0;8,82
+ST NG 07;node092;1. Committed DA;1;110,25;0;8,82
+ST NG 08;node092;1. Committed DA;1;306;0;24,48
+ST NG 09;node092;1. Committed DA;1;345,6;0;27,65
+ST NG 10;node105;1. Committed DA;1;106,25;0;8,5
+ST Other 01;node024;1. Committed DA;1;4,6;0;2,07
+ST Other 02;node024;1. Committed DA;1;30,4;0;30,1
+Wind 01;node024;Wind;1;11,5;1;0
+Wind 02;node024;Wind;1;38;1;0
+Wind 03;node024;Wind;1;10;1;0
+Wind 04;node024;Wind;1;5;1;0
+Wind 05;node024;Wind;1;1,1;1;0
+Wind 06;node027;Wind;1;24,1;1;0
+Wind 07;node027;Wind;1;16,6;1;0
+Wind 08;node027;Wind;1;16,6;1;0
+Wind 09;node027;Wind;1;16,6;1;0
+Wind 10;node027;Wind;1;16,6;1;0
+Wind 11;node027;Wind;1;16,6;1;0
+Wind 12;node031;Wind;1;97,5;1;0
+Wind 13;node031;Wind;1;58,7;1;0
+Wind 14;node100;Wind;1;400;1;0
+Wind 15;node082;Wind;1;50;1;0
+Wind 16;node082;Wind;1;149,5;1;0
+Wind 17;node082;Wind;1;149,5;1;0

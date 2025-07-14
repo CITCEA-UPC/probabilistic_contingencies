@@ -1,0 +1,8 @@
+git stash -a : guardar cambios en pila (lo guarda no se donde y se puede recuperar)
+git stash pop: recupera lo ultimo que has guardado
+
+para cambiar de rama:
+git pull 
+git checkout <nombre de la rama>
+nombre de la rama desde la web https://github.com/MauroGarciaLorenzo/hp2c-dt/tree/main
+
