@@ -11,10 +11,11 @@ import pandas as pd
 from stability_analysis.preprocess import preprocess_data, read_data, process_raw
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow, slack_bus, fill_d_grid_after_powerflow
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
+from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
 from stability_analysis.preprocess import parameters
 from GridCalEngine.Simulations.PowerFlow.power_flow_worker import multi_island_pf_nc
-from stability_analysis.state_space import build_ss, generate_NET, generate_elements
-from stability_analysis.analysis import small_signal
+from small_signal_analysis import *
+from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, assign_SlackBus_to_grid
 import warnings
 
 
@@ -25,6 +26,20 @@ file_lock = threading.Lock()
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
 warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
+
+
+def read_excel_sheets_as_dict(file_path):
+    """
+    Reads an Excel file with multiple sheets and returns a dictionary.
+
+    Parameters:
+        file_path (str): Path to the Excel file.
+
+    Returns:
+        dict: A dictionary where keys are sheet names and values are DataFrames.
+    """
+    xls = pd.read_excel(file_path, sheet_name=None)
+    return xls
 
 def detect_islands(grid):
     """
@@ -221,6 +236,7 @@ def read_results_jsonl(route='results_secuencial.jsonl'):
 if __name__ == "__main__":
     # Path to the grid file
     '''
+    TODO: UPDATE
     Number of lines: 170
     Number of generators: 54
     Number of transformers: 9
@@ -231,58 +247,42 @@ if __name__ == "__main__":
     # Open the grid
     grid = gce.open_file(GRID_FILE)
 
-    # ----------------------------------------------------------------
+    filename= 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
+    d_grid = read_excel_sheets_as_dict(filename+'d_grid.xlsx')
+    d_raw_data = read_excel_sheets_as_dict(filename+'d_raw_data.xlsx')
+    d_opf = read_excel_sheets_as_dict(filename+'d_opf.xlsx')
+    d_op = read_excel_sheets_as_dict(filename+'d_op.xlsx')
 
-    excel_headers = "IEEE_118_FULL_headers"
-    excel_data = "IEEE_118_FULL"
-    excel_op = "OperationData_IEEE_118_NREL"
+    # check d_grid Vn it has to be in [kV] !!
+    d_grid['T_SG']['Vn'] = d_grid['T_SG']['Vn'] / 1e3
+    d_grid['T_VSC']['Vn'] = d_grid['T_VSC']['Vn'] / 1e3
+
     excel_lines_ratings = "IEEE_118_Lines"
-
     path_data = 'stability_analysis/stability_analysis/data/'
-    excel_sys = os.path.join(path_data, "cases", excel_headers + ".xlsx")
-    excel_sg = os.path.join(path_data, "cases", excel_data + "_data_sg.xlsx")
-    excel_vsc = os.path.join(path_data, "cases", excel_data + "_data_vsc.xlsx")
-    excel_op = os.path.join(path_data, "cases", excel_op + ".xlsx")
-
-    excel_lines_ratings = os.path.join(
-        path_data, "cases", excel_lines_ratings + ".csv")
-
-    d_raw_data = process_raw.read_raw(GRID_FILE)
-    d_op = read_data.read_data(excel_op)
-
-    # FOR the 118-bus system
-    d_raw_data['generator']['Region'] = d_op['Generators']['Region']
-    d_raw_data['load']['Region'] = d_op['Loads']['Region']
-    # d_raw_data['branch']['Region']=1
-    d_raw_data['results_bus']['Region'] = d_op['Buses']['Region']
-    d_raw_data['generator']['MBASE'] = d_op['Generators']['Snom']
+    excel_lines_ratings = os.path.join(path_data, "cases", excel_lines_ratings + ".csv")
     lines_ratings = pd.read_csv(excel_lines_ratings)
 
-    # Preprocess input raw data to match Excel file format
-    preprocess_data.preprocess_raw(d_raw_data)
+    for line in grid.lines:
+        bf = int(line.bus_from.code)
+        bt = int(line.bus_to.code)
+        line.rate = float(lines_ratings.loc[
+            lines_ratings.query('Bus_from == @bf and Bus_to == @bt').index[
+                0], 'Max Flow (MW)'])
 
-    d_grid, d_grid_0 = read_data.read_sys_data(excel_sys)
+    for trafo in grid.transformers2w:
+        bf = int(trafo.bus_from.code)
+        bt = int(trafo.bus_to.code)
+        trafo.rate = float(lines_ratings.loc[
+            lines_ratings.query('Bus_from == @bf and Bus_to == @bt').index[
+                0], 'Max Flow (MW)'])
+
+    excel_data = "IEEE_118_FULL"
+    excel_sg = os.path.join(path_data, "cases", excel_data + "_data_sg.xlsx")
+    excel_vsc = os.path.join(path_data, "cases", excel_data + "_data_vsc.xlsx")
+
+    # Read Excel files with system data, generator data, and VSC data
     d_sg = read_data.read_data(excel_sg)
     d_vsc = read_data.read_data(excel_vsc)
-
-    idx_sg0 = list(d_op['Generators'].query('Snom_SG==0')['BusNum'])
-    d_raw_data['generator'].loc[d_raw_data['generator'].query('I == @idx_sg0').index, 'alpha_P_SG'] = 0
-
-    idx_cig0 = list(d_op['Generators'].query('Snom_CIG==0')['BusNum'])
-    d_raw_data['generator'].loc[d_raw_data['generator'].query('I == @idx_cig0').index, 'alpha_P_GFOR'] = 0
-    d_raw_data['generator'].loc[d_raw_data['generator'].query('I == @idx_cig0').index, 'alpha_P_GFOL'] = 0
-
-    for i in d_raw_data['generator'].index:
-        alphas = d_raw_data['generator'].loc[
-            i, [col for col in d_raw_data['generator'].columns if col.startswith('alpha')]]
-        nan_indices = alphas[alphas.isna()].index
-        d_raw_data['generator'].loc[i, nan_indices] = 1 / (alphas.isna().sum())
-
-    for el in ['GFOL', 'GFOR']:
-        d_op['Generators']['Snom_' + el] = d_raw_data['generator']['alpha_P_' + el] * d_op['Generators']['Snom_CIG']
-
-    # Remove old file if it exists
-    remove_existing_result_file('results_secuencial.jsonl')
 
     # ----------------------------------------------------------------
     # Print the total counts of each component type
@@ -293,6 +293,33 @@ if __name__ == "__main__":
     print(f"Number of generators: {num_generators}")
     print(f"Number of transformers: {num_transformers}")
     # ----------------------------------------------------------------
+
+    assign_Generators_to_grid.assign_PVGen(GridCal_grid=grid, d_raw_data=d_raw_data, d_op=d_op, voltage_profile_list=True, solved_point=True, d_pf=d_opf)
+    assign_PQ_Loads_to_grid.assign_PQ_load(grid, d_raw_data)
+
+    for bus in grid.buses:
+        bus_num = int(bus.code)
+        idx = d_opf['pf_bus'].query('bus == @bus_num').index[0]
+
+        bus.Vm0 = d_opf['pf_bus'].loc[idx, 'Vm']
+        bus.Va0 = d_opf['pf_bus'].loc[idx, 'theta'] / 180 * np.pi
+
+    slack_bus_num = d_grid['T_global'].loc[0, 'ref_bus']
+    assign_SlackBus_to_grid.assign_slack_bus(grid, slack_bus_num)
+
+    # Calculate Power Flow
+    pf_results = GridCal_powerflow.run_powerflow(grid,SolverType.NR,Qconrol_mode=False)
+
+    # Remove old file if it exists
+    remove_existing_result_file('results_secuencial.jsonl')
+
+    if pf_results.convergence_reports[0].converged_[0]:
+
+        d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
+
+        stability, T_EIG = calculate_small_signal(d_raw_data, d_op, grid, d_grid, d_sg, d_vsc, d_pf)
+    else:
+        print('Base case power flow does not converge')
     cases = 0
     total_cases = (
             num_lines + num_transformers + num_generators +  # fallos individuales
@@ -308,6 +335,7 @@ if __name__ == "__main__":
     )
 
     print(f"Total simulated contingency cases: {total_cases}")
+
     # Probability of failure (100% means any component you deactivate will fail)
     FAILURE_PROBABILITY = 100
 
