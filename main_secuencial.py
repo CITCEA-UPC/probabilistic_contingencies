@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys
-import os
-
-import GridCalEngine.api as gce
-import networkx as nx
 import json
-import numpy as np
-import pandas as pd
-from stability_analysis.preprocess import preprocess_data, read_data, process_raw
-from stability_analysis.powerflow import GridCal_powerflow, process_powerflow, slack_bus, fill_d_grid_after_powerflow
-# from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
-from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
-from stability_analysis.preprocess import parameters
-from GridCalEngine.Simulations.PowerFlow.power_flow_worker import multi_island_pf_nc
-from small_signal_analysis import *
-from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, assign_SlackBus_to_grid
+import os
+import threading
 import warnings
 
-
-import threading
+import numpy as np
+import pandas as pd
+# from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
+from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
+from small_signal_analysis import *
+from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, \
+    assign_SlackBus_to_grid
+from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
+from stability_analysis.preprocess import read_data
 
 file_lock = threading.Lock()
 
@@ -108,10 +102,7 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
 
     try:
         pf_results = gce.power_flow(grid)
-        run_pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
         pf_converged = pf_results.converged
-        run_pf_converged = pf_results.convergence_reports[0].converged_[0]
-        
     except Exception as e:
 
         print(f"Error during powerflow and run powerflow check: {e}")
@@ -120,6 +111,9 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         pf_converged = None
         run_pf_converged = None
     try:
+        run_pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
+        run_pf_converged = run_pf_results.convergence_reports[0].converged_[0]
+
         # Update PF results and operation point of generator elements
         d_pf = process_powerflow.update_OP(grid, run_pf_results, d_raw_data)
 
