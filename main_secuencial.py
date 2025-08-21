@@ -105,8 +105,20 @@ def check(grid):
 
 
 def check_stability_and_pf(grid, d_grid, d_raw_data):
-    pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
 
+    try:
+        pf_results = gce.power_flow(grid)
+        run_pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
+        pf_converged = pf_results.converged
+        run_pf_converged = pf_results.convergence_reports[0].converged_[0]
+        
+    except Exception as e:
+
+        print(f"Error during powerflow and run powerflow check: {e}")
+        # gce.save_file(grid, "exemple.gridcal")
+        # sys.exit()
+        pf_converged = None
+        run_pf_converged = None
     try:
         # Update PF results and operation point of generator elements
         d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
@@ -177,13 +189,13 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         # # Obtain the participation factors for the selected modes
         # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
         # # Obtain the participation factors >= tol, for the selected modes
-        return stability, T_EIG, gce.power_flow(grid).converged, pf_results.convergence_reports[0].converged_[0]
+        return stability, pf_converged, run_pf_converged
     except Exception as e:
 
         print(f"Error during stability check: {e}")
         # gce.save_file(grid, "exemple.gridcal")
         # sys.exit()
-        return str(e), None, None, None
+        return str(e), pf_converged, run_pf_converged
 
 
 
@@ -244,8 +256,11 @@ if __name__ == "__main__":
     # Alternative example:
     GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
 
+    # GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
+
     # Open the grid
     grid = gce.open_file(GRID_FILE)
+
 
     filename= 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
     d_grid = read_excel_sheets_as_dict(filename+'d_grid.xlsx')
@@ -261,6 +276,8 @@ if __name__ == "__main__":
     path_data = 'stability_analysis/stability_analysis/data/'
     excel_lines_ratings = os.path.join(path_data, "cases", excel_lines_ratings + ".csv")
     lines_ratings = pd.read_csv(excel_lines_ratings)
+
+
 
     for line in grid.lines:
         bf = int(line.bus_from.code)
@@ -334,18 +351,19 @@ if __name__ == "__main__":
             num_generators * num_transformers  # generador-transformador
     )
 
-    print(f"Total simulated contingency cases: {total_cases}")
+    print(f"Total simulations to do of contingency cases: {total_cases}")
 
+
+    # ==============START SIMULATIONS======================================================
     # Probability of failure (100% means any component you deactivate will fail)
     FAILURE_PROBABILITY = 100
-
     # ======================[ LINES ]======================
     # ------------------ Simulate first-level failures ------------------
     for idx, line in enumerate(grid.lines):
         line.active = False
         cases += 1
         print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+        stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         result = {
             'case_id': cases,
@@ -369,7 +387,7 @@ if __name__ == "__main__":
                 cases += 1
                 print("Second_level_Lines-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
 
-                stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+                stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 result = {
                     'case_id': cases,
@@ -392,7 +410,7 @@ if __name__ == "__main__":
             transformer.active = False
             cases += 1
             print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+            stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results = {
                 'case_id': cases,
@@ -416,7 +434,7 @@ if __name__ == "__main__":
             generator.active = False
             cases += 1
             print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+            stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             results = {
                 'case_id': cases,
@@ -447,7 +465,7 @@ if __name__ == "__main__":
         transformer.active = False
         cases += 1
         print("First_level_Transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+        stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         result = {
             'case_id': cases,
@@ -470,7 +488,7 @@ if __name__ == "__main__":
                 cases += 1
                 print("Second_level_Transformers-transformers:", cases, '/', total_cases,
                       f'({cases / total_cases * 100:.2f}%)')
-                stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+                stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 result = {
                     'case_id': cases,
@@ -494,7 +512,7 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+            stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
                 'case_id': cases,
@@ -519,7 +537,7 @@ if __name__ == "__main__":
             cases += 1
             print("Second_level_Transformers-generators:", cases, '/', total_cases,
                   f'({cases / total_cases * 100:.2f}%)')
-            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+            stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
                 'case_id': cases,
@@ -548,7 +566,7 @@ if __name__ == "__main__":
         generator.active = False
         cases += 1
         print("First_level_Generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+        stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
         result = {
             'case_id': cases,
@@ -569,7 +587,7 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+            stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
                 'case_id': cases,
@@ -593,7 +611,7 @@ if __name__ == "__main__":
             cases += 1
             print("Second_level_Generators-transformers:", cases, '/', total_cases,
                   f'({cases / total_cases * 100:.2f}%)')
-            stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+            stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
             result = {
                 'case_id': cases,
@@ -618,7 +636,7 @@ if __name__ == "__main__":
                 cases += 1
                 print("Second_level_Generators-generators:", cases, '/', total_cases,
                       f'({cases / total_cases * 100:.2f}%)')
-                stability, T_EIG, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
+                stability, pf_converged, run_pf_converged = check_stability_and_pf(grid, d_grid, d_raw_data)
 
                 result = {
                     'case_id': cases,
