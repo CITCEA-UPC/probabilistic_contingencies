@@ -4,9 +4,9 @@ import json
 import os
 import threading
 import warnings
-
 import numpy as np
 import pandas as pd
+
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
 from small_signal_analysis import *
@@ -15,10 +15,12 @@ from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, as
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
 from stability_analysis.preprocess import read_data
 
-
 # PyCOMPSs imports
 from pycompss.api.task import task
 from pycompss.api.api import compss_wait_on
+
+global DEBUG
+DEBUG = True
 
 file_lock = threading.Lock()
 
@@ -214,7 +216,6 @@ if __name__ == "__main__":
     # Open the grid
     grid = gce.open_file(GRID_FILE)
 
-
     filename= 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
     d_grid = read_excel_sheets_as_dict(filename+'d_grid.xlsx')
     d_raw_data = read_excel_sheets_as_dict(filename+'d_raw_data.xlsx')
@@ -281,7 +282,8 @@ if __name__ == "__main__":
     pf_results = GridCal_powerflow.run_powerflow(grid,SolverType.NR,Qconrol_mode=False)
 
     # Remove old file if it exists
-    remove_existing_result_file('results_parallel.jsonl')
+    
+    #remove_existing_result_file('results_parallel.jsonl')
 
     if pf_results.convergence_reports[0].converged_[0]:
 
@@ -331,7 +333,17 @@ if __name__ == "__main__":
             'stability': stability,
             'islands': islands
         }
-        futures.append(result)
+        if DEBUG:
+
+            print("abans futures")
+            futures.append(result)
+            futures = compss_wait_on(futures)
+            with open("results_parallel.json", "w") as f:
+                json.dump(futures, f, indent=2)
+            print("Results saved to results_parallel.jsonl")
+            sys.exit()
+            
+            
 
         # 1) Second-level failures on lines
         for idx2, line2 in enumerate(grid.lines):
@@ -357,6 +369,7 @@ if __name__ == "__main__":
                 }
                 futures.append(result)
                 line2.active = True
+            
 
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
