@@ -117,7 +117,7 @@ pip-selfcheck.json
 .idea/misc.xml
 .idea/probabilistic_contingencies.iml
 .idea/vcs.xml
-
+.idea/
 # AWS User-specific
 .idea/**/aws.xml
 
