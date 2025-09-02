@@ -192,5 +192,7 @@ fabric.properties
 # Pycompss
 .COMPSsWorker/
 cfg
-exec.sh
 tmph3_o6zbt/
+
+# builds
+wheels

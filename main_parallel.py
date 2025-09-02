@@ -6,9 +6,13 @@ import threading
 import warnings
 import numpy as np
 import pandas as pd
+import memory_profiler as mp
+
 
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
+
+# Small signal imports
 from small_signal_analysis import *
 from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, \
     assign_SlackBus_to_grid
@@ -178,7 +182,7 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         return stability, pf_converged, run_pf_converged, detect_islands(grid)
     except Exception as e:
 
-        #print(f"Error during stability check: {e}")
+        print(f"Error during stability check: {e}")
         # gce.save_file(grid, "exemple.gridcal")
         # sys.exit()
         return str(e), pf_converged, run_pf_converged, detect_islands(grid)
@@ -198,6 +202,11 @@ def remove_existing_result_file(path='results_parallel.jsonl'):
         print(f"Removed existing file: {path}")
     else:
         print(f"No existing file found at: {path}")
+
+@task(returns=1)
+def dummy(i):
+    print("################ ", i+1)
+    return i+1
 
 
 if __name__ == "__main__":
@@ -264,10 +273,25 @@ if __name__ == "__main__":
     print(f"Number of generators: {num_generators}")
     print(f"Number of transformers: {num_transformers}")
     # ----------------------------------------------------------------
+    # --------------------------TEST PYCOMPSS--------------------------------------
+    futures = []
+
+    for i in range(3):
+        futures.append(dummy(i))
+
+    futures = compss_wait_on(futures)
+    print(futures)
+    
+    print("PYCOMPSS OKKKKK")
+    #sys.exit(0)
+    # --------------------------TEST PYCOMPSS--------------------------------------
+
+
+
 
     assign_Generators_to_grid.assign_PVGen(GridCal_grid=grid, d_raw_data=d_raw_data, d_op=d_op, voltage_profile_list=True, solved_point=True, d_pf=d_opf)
     assign_PQ_Loads_to_grid.assign_PQ_load(grid, d_raw_data)
-
+    print("Paso por aquí 0")
     for bus in grid.buses:
         bus_num = int(bus.code)
         idx = d_opf['pf_bus'].query('bus == @bus_num').index[0]
@@ -279,20 +303,22 @@ if __name__ == "__main__":
     assign_SlackBus_to_grid.assign_slack_bus(grid, slack_bus_num)
 
     # Calculate Power Flow
+    print("Paso por aquí 1")
     pf_results = GridCal_powerflow.run_powerflow(grid,SolverType.NR,Qconrol_mode=False)
 
     # Remove old file if it exists
     
     #remove_existing_result_file('results_parallel.jsonl')
-
+    print("Paso por aquí 2")
     if pf_results.convergence_reports[0].converged_[0]:
-
+        print("Paso por aquí 2.1")
         d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
-
+        print("Paso por aquí 2.2")
         stability, T_EIG = calculate_small_signal(d_raw_data, d_op, grid, d_grid, d_sg, d_vsc, d_pf)
     else:
         print('Base case power flow does not converge')
     cases = 0
+    print("Paso por aquí 3")
     total_cases = (
             num_lines + num_transformers + num_generators +  # fallos individuales
             num_lines * (num_lines - 1) +  # línea-línea (sin repetirse consigo misma)
@@ -315,12 +341,13 @@ if __name__ == "__main__":
     FAILURE_PROBABILITY = 100
     # ======================[ LINES ]======================
     # ------------------ Simulate first-level failures ------------------
+
     for idx, line in enumerate(grid.lines):
         line.active = False
         cases += 1
         print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
-
+        #stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+        
         result = {
             'case_id': cases,
             'level': 'single',
@@ -333,10 +360,11 @@ if __name__ == "__main__":
             'stability': stability,
             'islands': islands
         }
+        futures.append(result)
+        print("Deberia pasar por aqui")
         if DEBUG:
 
             print("abans futures")
-            futures.append(result)
             futures = compss_wait_on(futures)
             with open("results_parallel.json", "w") as f:
                 json.dump(futures, f, indent=2)

@@ -4,6 +4,8 @@ import json
 import os
 import threading
 import warnings
+import memory_profiler as mp
+import sys
 
 import numpy as np
 import pandas as pd
@@ -346,7 +348,7 @@ if __name__ == "__main__":
     )
 
     print(f"Total simulations to do of contingency cases: {total_cases}")
-
+    sys.exit()
 
     # ==============START SIMULATIONS======================================================
     # Probability of failure (100% means any component you deactivate will fail)

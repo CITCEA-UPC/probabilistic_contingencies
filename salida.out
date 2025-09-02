@@ -1,0 +1,406 @@
+Number of lines: 175
+Number of generators: 53
+Number of transformers: 11
+Newton Raphson
+No existing file found at: results_secuencial.jsonl
+calculate_small_signal 1
+calculate_small_signal 2
+calculate_small_signal 3
+calculate_small_signal 4
+calculate_small_signal 5
+calculate_small_signal 6
+calculate_small_signal 7
+generate_SS_NET_blocks 1
+generate_SS_NET_blocks 2
+generate_SS_NET_blocks 3
+generate_SS_NET_blocks 4
+generate_SS_NET_blocks 5
+generate_SS_NET_blocks 6
+generate_SS_NET_blocks 7
+generate_SS_NET_blocks 8
+generate_SS_NET_blocks 9
+generate_SS_NET_blocks 10
+generate_SS_NET_blocks 11
+generate_SS_NET_blocks 12
+generate_SS_NET_blocks 13
+generate_SS_NET_blocks 14
+calculate_small_signal 8
+calculate_small_signal 9
+calculate_small_signal 10
+Filename: /home/user/stability_analysis/small_signal_analysis.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    29    403.0 MiB    403.0 MiB           1   @mp.profile
+    30                                         def calculate_small_signal(d_raw_data,d_op, gridCal_grid, d_grid, d_sg, d_vsc, d_opf):
+    31                                             """
+    32                                             Runs the alternating current optimal power flow (ACOPF) stability analysis.
+    33                                             :param case: pandas DataFrame with the case parameters
+    34                                             :param kwargs: dictionary with additional parameters
+    35                                             :return: stability: 0 if the system is stable, 1 otherwise
+    36                                             :return: output_dataframes: Mandatory dictionary with at least the
+    37                                                 entries that contain dataframes (None entries if feasibility fails)
+    38                                             """
+    39                                             # func_params = kwargs.get("func_params")
+    40                                             # # generator = kwargs.get("generator", None)
+    41                                             # # dimensions = kwargs.get("dimensions", None)
+    42                                         
+    43                                             # # n_pf = func_params.get("n_pf", None)
+    44                                             # d_raw_data = func_params.get("d_raw_data", None)
+    45                                             # d_op = func_params.get("d_op", None)
+    46                                             # gridCal_grid = func_params.get("gridCal_grid", None)
+    47                                             # d_grid = func_params.get("d_grid", None)
+    48                                             # d_sg = func_params.get("d_sg", None)
+    49                                             # d_vsc = func_params.get("d_vsc", None)
+    50                                             # d_opf = func_params.get("d_opf", None)
+    51                                             # voltage_profile = func_params.get("voltage_profile", None)
+    52                                             # v_min_v_max_delta_v = func_params.get("v_min_v_max_delta_v", None)
+    53                                             # v_set = func_params.get("v_set", None)
+    54                                         
+    55                                             # # Remove the id and make sure case is fully numeric
+    56                                             # case_id = case["case_id"]
+    57                                             # case = case.drop("case_id")
+    58                                             # case = case.astype(float)
+    59                                         
+    60                                             # # Initialize essential output dataframes to None
+    61                                             # computing_times = pd.DataFrame(
+    62                                             #     {name: np.nan for name in COMPUTING_TIME_NAMES}, index=[0])
+    63                                             # output_dataframes = {}
+    64                                             # for df_name in OUTPUT_DF_NAMES:
+    65                                             #     output_dataframes[df_name] = pd.DataFrame({NAN_COLUMN_NAME: [np.nan]})
+    66                                         
+    67                                             # if voltage_profile is not None and v_min_v_max_delta_v is None:
+    68                                             #     raise ValueError('Voltage profile option selected but v_min, v_max, '
+    69                                             #                      'and delta_v are missing')
+    70                                             # if voltage_profile is not None and v_set is not None:
+    71                                             #     raise ValueError('Both Voltage profile and v_set option is selected. '
+    72                                             #                      'Choose only one of them')
+    73                                             # if voltage_profile is None and v_set is None:
+    74                                             #     raise ValueError('Neither Voltage profile or v_set option is selected.'
+    75                                             #                      ' Choose one of them')
+    76                                         
+    77                                             # d_raw_data, d_op = datagen_OP.generated_operating_point(case, d_raw_data,
+    78                                             #                                                         d_op)
+    79                                             # d_raw_data, slack_bus_num = choose_slack_bus(d_raw_data)
+    80                                             # i_slack=int(d_raw_data['generator'].query('I == @slack_bus_num').index[0])
+    81                                         
+    82                                             # # slack_bus_num=80
+    83                                             # assign_SlackBus_to_grid.assign_slack_bus(gridCal_grid, slack_bus_num)
+    84                                             
+    85                                             # assign_PQ_Loads_to_grid.assign_PQ_load(gridCal_grid, d_raw_data)
+    86                                         
+    87                                         #%%
+    88                                         #     if voltage_profile != None:
+    89                                         #         vmin = v_min_v_max_delta_v[0]
+    90                                         #         vmax = v_min_v_max_delta_v[1]
+    91                                         #         delta_v = v_min_v_max_delta_v[2]
+    92                                         #         convergence=False
+    93                                         #         #for ii in range(14):
+    94                                         #         #    if convergence!=True:
+    95                                         #         voltage_profile_list, indx_id = gen_voltage_profile(vmin, vmax, delta_v, d_raw_data, slack_bus_num,
+    96                                         #                                                                      gridCal_grid, generator=generator)
+    97                                         
+    98                                         #         assign_Generators_to_grid.assign_PVGen(GridCal_grid=gridCal_grid, d_raw_data=d_raw_data, d_op=d_op,
+    99                                         #                                                voltage_profile_list=voltage_profile_list, indx_id=indx_id)
+   100                                                 
+   101                                         #         # %% Run 1st POWER-FLOW
+   102                                         
+   103                                         #         # # Get Power-Flow results with GridCal
+   104                                         #         # pf_results = GridCal_powerflow.run_powerflow(gridCal_grid,Qconrol_mode=ReactivePowerControlMode.Direct)
+   105                                         
+   106                                         #         # print('Converged:', pf_results.convergence_reports[0].converged_[0])
+   107                                         
+   108                                         
+   109                                         #         # # Update PF results and operation point of generator elements
+   110                                         #         # d_pf_original = process_powerflow.update_OP(gridCal_grid, pf_results, d_raw_data)
+   111                                         #         # d_pf_original['info']=pd.DataFrame()
+   112                                         #         # d_pf_original = additional_info_PF_results(d_pf_original, i_slack, pf_results, n_pf)
+   113                                                 
+   114                                         #         #%%
+   115                                         
+   116                                         #         nc = compile_numerical_circuit_at(gridCal_grid)
+   117                                         #         nc.generator_data.cost_0[:] = 0
+   118                                         #         nc.generator_data.cost_1[:] = 0
+   119                                         #         nc.generator_data.cost_2[:] = 0
+   120                                         #         pf_options = gce.PowerFlowOptions(solver_type=gce.SolverType.NR, verbose=1, tolerance=1e-8, control_q=ReactivePowerControlMode.Direct)#, max_iter=100)
+   121                                         #         opf_options = gce.OptimalPowerFlowOptions(solver=gce.SolverType.NR, verbose=0, ips_tolerance=1e-4, ips_iterations=50)
+   122                                         
+   123                                         #     #    d_opf_results = ac_optimal_power_flow(Pref=np.array(d_pf_original['pf_gen']['P']), slack_bus_num=i_slack, nc=nc, pf_options=pf_options, plot_error=True)
+   124                                         
+   125                                         #         start = time.perf_counter()
+   126                                         
+   127                                         #         pf_results = multi_island_pf_nc(nc=nc, options=pf_options)
+   128                                         
+   129                                         #         d_opf_results = ac_optimal_power_flow(nc= nc,
+   130                                         #                                               pf_options= pf_options,
+   131                                         #                                               opf_options= opf_options,
+   132                                         #                                               # debug: bool = False,
+   133                                         #                                               #use_autodiff = True,
+   134                                         #                                               pf_init= True,
+   135                                         #                                               Sbus_pf= pf_results.Sbus,
+   136                                         #                                               voltage_pf= pf_results.voltage,
+   137                                         #                                               plot_error= False)
+   138                                         
+   139                                         
+   140                                         #         end = time.perf_counter()
+   141                                         #         computing_times['time_powerflow'] = end - start
+   142                                         #         computing_times['n_iterations']= d_opf_results.iterations
+   143                                         #         d_opf = process_optimal_power_flow.update_OP(gridCal_grid, d_opf_results, d_raw_data)
+   144                                         #         d_opf['info']=pd.DataFrame()
+   145                                         #         d_opf = additional_info_OPF_results(d_opf,i_slack, n_pf, d_opf_results)
+   146                                                 
+   147                                         #         print('Converged:', d_opf_results.converged)
+   148                                                 
+   149                                         #         convergence=d_opf_results.converged
+   150                                                 
+   151                                         #         # with open('C:/Users/Francesca/miniconda3/envs/gridcal_original2/datagen/results/'+case_id+'.txt', 'w') as f:
+   152                                         #         #     for item in voltage_profile_list:
+   153                                         #         #         f.write(f"{item}\n")
+   154                                                         
+   155                                         # #%%
+   156                                         #     elif v_set != None:
+   157                                         
+   158                                         #         indx_id = np.stack([np.arange(118), np.arange(1, 119)], axis=1)
+   159                                         #         #voltage_profile_list = [0.9422795864374686, 0.964955933394586, 0.9576475170917216, 1.0124133297572444, 1.0154633370197117, 0.9951657482889802, 0.992350196816262, 1.0140749276252947, 1.0462410188183175, 1.0505587621707737, 0.9874442911045904, 0.9935370827677812, 0.965713216496189, 0.9836528404916146, 0.9804945483198176, 0.9850502808012735, 1.0079880248745072, 0.9919112403203582, 0.982359060871046, 0.9611168974902262, 0.9585207043746752, 0.9694103722497208, 1.012021506303396, 1.0202743592352022, 1.0424517084121292, 1.029558849995919, 0.9748332325955154, 0.962679532278627, 0.9635863657846566, 0.9977766197862517, 0.9723229345719728, 0.989668858882766, 0.9885383273330716, 1.0134910622879023, 1.012382534601708, 1.0129775662222456, 1.0182843458879505, 1.0063749373816555, 1.0120458798438765, 1.007878540100683, 1.000307700730365, 1.0087294948043528, 0.993694793138082, 0.9858458597895028, 0.9886548991910328, 1.0130788846687784, 1.0155852366641658, 1.0135138230050789, 1.0190799858490271, 1.004281959289629, 0.9856221837089704, 0.9791146225958572, 0.9788847582750166, 0.990193732407798, 0.9898581735456772, 0.9894786661417644, 0.9922037685891928, 0.9845785977333046, 1.001554983260809, 1.0228361572198506, 1.0288770467578243, 1.0264901863555451, 1.0222590279152683, 1.0354399943597965, 1.059698355327095, 1.0460891936994254, 1.03012667245492, 1.070002818608136, 1.056712265906222, 1.0217713385063616, 1.0220013455209245, 1.0432647183311967, 1.0222747065809024, 0.9975473832343944, 1.0090108891192984, 1.0231818179270071, 1.0430158945578805, 1.037301493282056, 1.0368972423832277, 1.0491912717258054, 1.0686170329981697, 1.0542985208233515, 1.0364837030066492, 1.0251234315305915, 1.035416299630262, 0.9732748918473176, 1.0796567633835876, 1.0485738273928171, 1.0991335489323055, 1.0670189325757975, 1.093427003452236, 1.091996846564232, 1.054975293858037, 1.0374332314572086, 1.0175362072901348, 1.0288404528618778, 1.0365307367426295, 1.0437311189605762, 1.0776340287438506, 1.064629386477628, 1.056943002184324, 1.0783606882298593, 1.0470498025454416, 1.0356692527798554, 1.0290281037890472, 1.0158249499540528, 1.043690613063012, 1.0236713587448265, 1.0221051517387831, 1.0280071924823764, 1.0504875355371306, 1.0255058567425424, 1.020869226683825, 0.9748398716501836, 0.9730389636109872, 1.0707923173260236, 0.9670332501458544, 1.010628241294511]
+   160                                         #         voltage_profile_list = [0.93829879, 0.96498394, 0.95561935, 1.01830377, 1.02140734, 1.00033049, 0.99713578, 1.02268959, 1.06121169, 1.07153954, 0.99078686, 0.99842522, 0.96584603, 0.98691617, 0.98319137, 0.98840926, 1.01456654, 0.99811685, 0.98599984, 0.96167851, 0.95877746, 0.97149327, 1.02164073, 1.02951744, 1.06438492, 1.0511853, 0.97740033, 0.96298414, 0.96372759, 1.00385257, 0.97362716, 0.99380896, 0.98835144, 1.01261772, 1.01161847, 1.01240124, 1.0178319, 1.00871826, 1.00913256, 1.00364477, 0.9947152, 1.00390269, 0.98850386, 0.97867489, 0.98195817, 1.01084463, 1.01469725, 1.01129868, 1.01781162, 1.00096417, 0.97952522, 0.97202112, 0.97198509, 0.98572513, 0.98557655, 0.98503972, 0.98757495, 0.97868952, 0.99708903, 1.02115348, 1.02813403, 1.02512204, 1.02087976, 1.0362813, 1.06652923, 1.0492285, 1.03004771, 1.08189422, 1.07050617, 1.03220371, 1.03214301, 1.05330522, 1.03241908, 1.00815868, 1.02235259, 1.04596665, 1.06920806, 1.06280839, 1.06218044, 1.07536192, 1.08582303, 1.06747726, 1.04535518, 1.02719253, 1.03569625, 0.96881819, 1.07467193, 1.04538564, 1.09970213, 1.06215803, 1.09396433, 1.09225163, 1.05648089, 1.04174617, 1.02273707, 1.03980836, 1.05456034, 1.06181581, 1.08835824, 1.07026133, 1.05722884, 1.07824841, 1.05021421, 1.03757592, 1.03038166, 1.01560932, 1.04960736, 1.02396303, 1.02210236, 1.02879213, 1.05434017, 1.02600167, 1.03161197, 0.97708699, 0.97507324, 1.08267565, 0.96788019, 1.02774898]
+   161                                         
+   162                                         #         assign_Generators_to_grid.assign_PVGen(GridCal_grid=gridCal_grid, d_raw_data=d_raw_data, d_op=d_op,
+   163                                         #                                                voltage_profile_list=voltage_profile_list, indx_id=indx_id)#, V_set=v_set)
+   164                                         
+   165                                         #         # %% Run 1st POWER-FLOW
+   166                                             
+   167                                         #         # # Get Power-Flow results with GridCal
+   168                                         #         # pf_results = GridCal_powerflow.run_powerflow(gridCal_grid,Qconrol_mode=ReactivePowerControlMode.Direct)
+   169                                             
+   170                                         #         # print('Converged:', pf_results.convergence_reports[0].converged_[0])
+   171                                             
+   172                                             
+   173                                         #         # # Update PF results and operation point of generator elements
+   174                                         #         # d_pf_original = process_powerflow.update_OP(gridCal_grid, pf_results, d_raw_data)
+   175                                         #         # d_pf_original['info']=pd.DataFrame()
+   176                                         #         # d_pf_original = additional_info_PF_results(d_pf_original, i_slack, pf_results, n_pf)
+   177                                                 
+   178                                         #         #%%
+   179                                             
+   180                                         #         nc = compile_numerical_circuit_at(gridCal_grid)
+   181                                         #         nc.generator_data.cost_0[:] = 0
+   182                                         #         nc.generator_data.cost_1[:] = 0
+   183                                         #         nc.generator_data.cost_2[:] = 0
+   184                                         #         pf_options = gce.PowerFlowOptions(solver_type=gce.SolverType.NR, verbose=1, tolerance=1e-8, control_q=ReactivePowerControlMode.Direct)#, max_iter=100)
+   185                                         #         opf_options = gce.OptimalPowerFlowOptions(solver=gce.SolverType.NR, verbose=0, ips_tolerance=1e-4, ips_iterations=100)
+   186                                             
+   187                                         #     #    d_opf_results = ac_optimal_power_flow(Pref=np.array(d_pf_original['pf_gen']['P']), slack_bus_num=i_slack, nc=nc, pf_options=pf_options, plot_error=True)
+   188                                             
+   189                                         #         start = time.perf_counter()
+   190                                             
+   191                                         #         pf_results = multi_island_pf_nc(nc=nc, options=pf_options)
+   192                                             
+   193                                         #         d_opf_results = ac_optimal_power_flow(nc= nc,
+   194                                         #                                               pf_options= pf_options,
+   195                                         #                                               opf_options= opf_options,
+   196                                         #                                               # debug: bool = False,
+   197                                         #                                               #use_autodiff = True,
+   198                                         #                                               pf_init= True,
+   199                                         #                                               Sbus_pf= pf_results.Sbus,
+   200                                         #                                               voltage_pf= pf_results.voltage,
+   201                                         #                                               plot_error= False)
+   202                                             
+   203                                             
+   204                                         #         end = time.perf_counter()
+   205                                         #         computing_times['time_powerflow'] = end - start
+   206                                         #         computing_times['n_iterations']= d_opf_results.iterations
+   207                                         #         d_opf = process_optimal_power_flow.update_OP(gridCal_grid, d_opf_results, d_raw_data)
+   208                                         #         d_opf['info']=pd.DataFrame()
+   209                                         #         d_opf = additional_info_OPF_results(d_opf,i_slack, n_pf, d_opf_results)
+   210                                                 
+   211                                         #         print('Converged:', d_opf_results.converged)
+   212                                         #     #%%
+   213                                         
+   214                                         #     if not d_opf_results.converged:
+   215                                         #         # Exit function
+   216                                         #         stability = -1
+   217                                         #         output_dataframes = postprocess_obj_func(
+   218                                         #             output_dataframes, case_id, stability,
+   219                                         #             df_computing_times=computing_times)
+   220                                         #         return stability, output_dataframes
+   221                                         
+   222                                         #     #########################################################################
+   223                                         
+   224    403.0 MiB      0.0 MiB           1       print("calculate_small_signal 1")
+   225    403.3 MiB      0.4 MiB           1       d_grid = fill_d_grid_after_powerflow.fill_d_grid_contingency_analysis(d_grid, d_opf, d_raw_data, gridCal_grid)
+   226    403.3 MiB      0.0 MiB           1       print("calculate_small_signal 2")
+   227                                             # p_sg = np.sum(d_grid['T_gen'].query('element == "SG"')['P']) * 100
+   228                                             # p_cig = np.sum(d_grid['T_gen'].query('element != "SG"')['P']) * 100
+   229                                             # if p_cig!=0:
+   230                                             #     perc_gfor = np.sum(d_grid['T_gen'].query('element == "GFOR"')['P']) / p_cig*100
+   231                                             # else:
+   232                                             #     perc_gfor=0
+   233                                                 
+   234                                             # if dimensions:
+   235                                             #     valid_point = True
+   236                                             #     for d in dimensions:
+   237                                             #         if d.label == "p_sg":
+   238                                             #             if p_sg < d.borders[0] or p_sg > d.borders[1]:
+   239                                             #                 valid_point = False
+   240                                             #         if d.label == "p_cig":
+   241                                             #             if p_cig < d.borders[0] or p_cig > d.borders[1]:
+   242                                             #                 valid_point = False
+   243                                             #         if d.label == "perc_g_for":
+   244                                             #             if perc_gfor < d.borders[0] or perc_gfor > d.borders[1]:
+   245                                             #                 valid_point = False
+   246                                             #     if not valid_point:
+   247                                             #         # Exit function
+   248                                             #         stability = -2
+   249                                             #         output_dataframes = postprocess_obj_func(
+   250                                             #             output_dataframes,case_id, stability,
+   251                                             #             df_computing_times=computing_times)
+   252                                             #         return stability, output_dataframes
+   253                                         
+   254                                             # %% READ PARAMETERS
+   255    403.3 MiB      0.0 MiB           1       print("calculate_small_signal 3")
+   256                                             # Get parameters of generator units from excel files & compute pu base
+   257    403.3 MiB      0.0 MiB           1       d_grid = parameters.get_params(d_grid, d_sg, d_vsc)
+   258    403.3 MiB      0.0 MiB           1       print("calculate_small_signal 4")
+   259                                             # d_grid = update_control(case, d_grid)
+   260    403.3 MiB      0.0 MiB           1       print("calculate_small_signal 5")
+   261                                             # Assign slack bus and slack element
+   262    403.3 MiB      0.0 MiB           1       d_grid = slack_bus.assign_slack(d_grid)
+   263    403.3 MiB      0.0 MiB           1       print("calculate_small_signal 6")
+   264                                             # Compute reference angle (delta_slk)
+   265    403.3 MiB      0.0 MiB           1       d_grid, REF_w, num_slk, delta_slk = slack_bus.delta_slk(d_grid)
+   266    403.3 MiB      0.0 MiB           1       print("calculate_small_signal 7")
+   267                                             # %% GENERATE STATE-SPACE MODEL
+   268                                         
+   269                                             # Generate AC & DC NET State-Space Model
+   270                                             #start = time.perf_counter()
+   271                                         
+   272    403.3 MiB      0.0 MiB           1       """
+   273                                             connect_fun: 'append_and_connect' (default) or 'interconnect'. 
+   274                                                 'append_and_connect': Uses a function that bypasses linearization; 
+   275                                                 'interconnect': use original ct.interconnect function. 
+   276                                             save_ss_matrices: bool. Default is False. 
+   277                                                 If True, write on csv file the A, B, C, D matrices of the state space.
+   278                                                 False default option
+   279                                             """
+   280    403.3 MiB      0.0 MiB           1       connect_fun = 'append_and_connect'
+   281    403.3 MiB      0.0 MiB           1       save_ss_matrices = False
+   282                                         
+   283   1085.6 MiB    682.3 MiB           2       l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(
+   284    403.3 MiB      0.0 MiB           1           d_grid, delta_slk, connect_fun, save_ss_matrices)
+   285   1085.6 MiB      0.0 MiB           1       print("calculate_small_signal 8")
+   286                                             #end = time.perf_counter()
+   287                                             #computing_times['time_generate_SS_net'] = end - start
+   288                                         
+   289                                             #start = time.perf_counter()
+   290                                         
+   291                                             # Generate generator units State-Space Model
+   292   1085.6 MiB      0.0 MiB           2       l_blocks, l_states = generate_elements.generate_SS_elements(
+   293   1085.6 MiB      0.0 MiB           1           d_grid, delta_slk, l_blocks, l_states, connect_fun, save_ss_matrices)
+   294                                             #end = time.perf_counter()
+   295                                             #computing_times['time_generate_SS_elem'] = end - start
+   296   1085.6 MiB      0.0 MiB           1       print("calculate_small_signal 9")
+   297                                             # %% BUILD FULL SYSTEM STATE-SPACE MODEL
+   298                                         
+   299                                             # Define full system inputs and ouputs
+   300   1085.6 MiB      0.0 MiB           1       var_in = ['NET_Rld1']
+   301   1085.6 MiB      0.0 MiB           1       var_out = ['all'] #['all']  # ['GFOR3_w'] #
+   302                                         
+   303                                             # Build full system state-space model
+   304                                             #start = time.perf_counter()
+   305                                         
+   306   1085.6 MiB      0.0 MiB           1       inputs, outputs = build_ss.select_io(l_blocks, var_in, var_out)
+   307   4371.5 MiB   3285.8 MiB           2       ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun,
+   308   1085.6 MiB      0.0 MiB           1                                 save_ss_matrices)
+   309   4371.5 MiB      0.0 MiB           1       print("calculate_small_signal 10")
+   310                                             #end = time.perf_counter()
+   311                                             #computing_times['time_connect'] = end - start
+   312                                         
+   313                                         
+   314                                             # %% SMALL-SIGNAL ANALYSIS
+   315                                         
+   316                                             #start = time.perf_counter()
+   317                                         
+   318                                         
+   319   4380.1 MiB      8.6 MiB           1       T_EIG = small_signal.FEIG(ss_sys, False)
+   320   4380.1 MiB      0.0 MiB           1       T_EIG.head
+   321                                         
+   322                                             #end = time.perf_counter()
+   323                                             #computing_times['time_eig'] = end - start
+   324                                         
+   325                                         
+   326                                             # write to excel
+   327                                             # T_EIG.to_excel(path.join(path_results, "EIG_" + excel + ".xlsx"))
+   328                                         
+   329   4380.1 MiB      0.0 MiB           1       if max(T_EIG['real'] >= 0):
+   330                                                 stability = 0
+   331                                             else:
+   332   4380.1 MiB      0.0 MiB           1           stability = 1
+   333                                                 
+   334                                             #%% write excel files
+   335                                             
+   336                                             # write_xlsx(d_grid,'./stability_analysis/data/cases/','IEEE118_NREL_stable_d_grid')
+   337                                             # write_xlsx(d_raw_data,'./stability_analysis/data/cases/','IEEE118_NREL_stable_d_raw_data')
+   338                                             # write_xlsx(d_opf,'./stability_analysis/data/cases/','IEEE118_NREL_stable_d_opf')
+   339                                             # write_xlsx(d_op,'./stability_analysis/data/cases/','IEEE118_NREL_stable_d_op')
+   340                                             
+   341                                             # # update grid.gridcal
+   342                                             # for gen in gridCal_grid.generators:
+   343                                             #     bus_num=int(gen.bus.code)
+   344                                             #     idx=d_opf['pf_gen'].query('bus == @bus_num').index[0]
+   345                                                 
+   346                                             #     gen.P=d_opf['pf_gen'].loc[idx,'P']*100
+   347                                             #     gen.Vset=d_opf['pf_gen'].loc[idx,'Vm']
+   348                                                 
+   349                                             #     if d_opf['pf_gen'].loc[idx,'Q'] >0:
+   350                                             #         gen.Qmax=d_opf['pf_gen'].loc[idx,'Q']*100*1.01
+   351                                             #         gen.Qmin=d_opf['pf_gen'].loc[idx,'Q']*100*0.99
+   352                                             #     else:
+   353                                             #         gen.Qmin=d_opf['pf_gen'].loc[idx,'Q']*100*1.01
+   354                                             #         gen.Qmax=d_opf['pf_gen'].loc[idx,'Q']*100*0.99
+   355                                         
+   356                                             # for bus in gridCal_grid.buses:
+   357                                             #     bus_num=int(bus.code)
+   358                                             #     idx=d_opf['pf_bus'].query('bus == @bus_num').index[0]
+   359                                         
+   360                                             #     bus.Vm0=d_opf['pf_bus'].loc[idx,'Vm']
+   361                                             #     bus.Va0=d_opf['pf_bus'].loc[idx,'theta']/180*np.pi
+   362                                                 
+   363                                             # gce.save_file(gridCal_grid, "./stability_analysis/data/cases/IEEE118_NREL_stable_grid.gridcal")
+   364                                         
+   365                                                 
+   366                                                 
+   367                                             #%%
+   368                                         
+   369                                             # Obtain all participation factors
+   370                                             # df_PF = small_signal.FMODAL(ss_sys, plot=False)
+   371                                             # # Obtain the participation factors for the selected modes
+   372                                             # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
+   373                                             # # Obtain the participation factors >= tol, for the selected modes
+   374                                             # start = time.perf_counter()
+   375                                         
+   376                                             # T_modal, df_PF = small_signal.FMODAL_REDUCED_tol(ss_sys, plot=False, modeID = np.arange(1,23), tol = 0.3)
+   377                                         
+   378                                             # end = time.perf_counter()
+   379                                             # computing_times['time_partfact'] = end - start
+   380                                         
+   381                                             # # Collect output dataframes
+   382                                             # df_op, df_real, df_imag, df_freq, df_damp = (
+   383                                             #     get_case_results(T_EIG=T_EIG, d_grid=d_grid))
+   384                                             # output_dataframes['df_op'] = df_op
+   385                                             # output_dataframes['df_real'] = df_real
+   386                                             # output_dataframes['df_imag'] = df_imag
+   387                                             # output_dataframes['df_freq'] = df_freq
+   388                                             # output_dataframes['df_damp'] = df_damp
+   389                                             # output_dataframes['df_computing_times'] = computing_times
+   390                                             # # Do not include objects that are not dataframes and are not single-row
+   391                                             # # output_dataframes['d_grid'] = d_grid
+   392                                             # # output_dataframes['d_opf'] = d_opf
+   393                                             # # output_dataframes['d_pf_original'] = d_pf_original
+   394                                             
+   395                                             # # Exit function
+   396                                             # output_dataframes = postprocess_obj_func(output_dataframes, case_id,
+   397                                             #                                          stability)
+   398   4380.1 MiB      0.0 MiB           1       return stability, T_EIG#, output_dataframes
+
+
+Total simulations to do of contingency cases: 57121
