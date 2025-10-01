@@ -66,6 +66,8 @@ def read_excel_sheets_as_dict(file_path):
     xls = pd.read_excel(file_path, sheet_name=None)
     return xls
 
+
+
 def detect_islands(grid):
     """
     Detecta si hay islas, es decir elementos aislados
@@ -114,7 +116,7 @@ def check(grid):
 
 @task(returns=5)
 def check_stability_and_pf(**kwargs):
-    grid = pickle.loads(kwargs["grid"])
+    grid = kwargs["grid"]
     d_grid = kwargs["d_grid"]
     d_raw_data = kwargs["d_raw_data"]
 
@@ -128,7 +130,7 @@ def check_stability_and_pf(**kwargs):
 
     try:
         pf_results = gce.power_flow(grid)
-        pf_converged = pf_results.converged
+        pf_converged = bool(pf_results.converged)
     except Exception as e:
 
         print(f"Error during powerflow and run powerflow check: {e}")
@@ -138,7 +140,7 @@ def check_stability_and_pf(**kwargs):
 
     try:
         run_pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
-        run_pf_converged = run_pf_results.convergence_reports[0].converged_[0]
+        run_pf_converged = bool(run_pf_results.convergence_reports[0].converged_[0])
 
         # Update PF results and operation point of generator elements
         d_pf = process_powerflow.update_OP(grid, run_pf_results, d_raw_data)
@@ -381,7 +383,7 @@ if __name__ == "__main__":
         line.active = False
         cases += 1
         print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+        kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
         error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
         
         result = {
@@ -404,12 +406,12 @@ if __name__ == "__main__":
             print("abans futures")
             futures = compss_wait_on(futures)
             print(futures)
-            temp_path = results_temporal.json
+            temp_path = "results_temporal.json"
             if NORD4:
                 temp_path = PATH_NORD4 + temp_path
             with open(temp_path, "w") as f:
                 json.dump(futures, f, indent=2)
-            print("Results saved to results_parallel.jsonl")
+            print("Results saved to results_parallel.json")
             sys.exit()
             
             
@@ -420,7 +422,7 @@ if __name__ == "__main__":
                 line2.active = False
                 cases += 1
                 print("Second_level_Lines-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-                kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+                kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
                 error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
                 result = {
@@ -446,7 +448,7 @@ if __name__ == "__main__":
             transformer.active = False
             cases += 1
             print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
             error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
             result = {
                 'errors': error,
@@ -471,7 +473,7 @@ if __name__ == "__main__":
             generator.active = False
             cases += 1
             print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
             error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
@@ -504,7 +506,7 @@ if __name__ == "__main__":
         transformer.active = False
         cases += 1
         print("First_level_Transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+        kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
         error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
         result = {
@@ -528,7 +530,7 @@ if __name__ == "__main__":
                 transformer2.active = False
                 cases += 1
                 print("Second_level_Transformers-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-                kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+                kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
                 error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
                 result = {
@@ -554,7 +556,7 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
             error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
@@ -580,7 +582,7 @@ if __name__ == "__main__":
             generator.active = False
             cases += 1
             print("Second_level_Transformers-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
             error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
@@ -611,7 +613,7 @@ if __name__ == "__main__":
         generator.active = False
         cases += 1
         print("First_level_Generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+        kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
         error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
         result = {
@@ -634,7 +636,7 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
             error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
@@ -659,7 +661,7 @@ if __name__ == "__main__":
             transformer.active = False
             cases += 1
             print("Second_level_Generators-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
             error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
@@ -685,7 +687,7 @@ if __name__ == "__main__":
                 generator2.active = False
                 cases += 1
                 print("Second_level_Generators-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-                kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+                kwargs = {"grid": grid, "d_grid": d_grid, "d_raw_data": d_raw_data}
                 error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
                 result = {
