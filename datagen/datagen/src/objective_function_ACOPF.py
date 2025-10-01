@@ -13,8 +13,8 @@ try:
     from pycompss.api.task import task
     from pycompss.api.api import compss_wait_on
 except ImportError:
-    from datagen.dummies.task import task
-    from datagen.dummies.api import compss_wait_on
+    from datagen.datagen.dummies.task import task
+    from datagen.datagen.dummies.api import compss_wait_on
 
 import time
 

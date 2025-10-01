@@ -2,3 +2,4 @@ numpy==2.2.6
 pandas==2.3.2
 GridCal==5.3.40
 control==0.10.1
+memory_profiler

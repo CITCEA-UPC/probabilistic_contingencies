@@ -41,9 +41,9 @@ try:
     from pycompss.api.api import compss_wait_on
     from pycompss.api.constraint import constraint
 except ImportError:
-    from datagen.dummies.task import task
-    from datagen.dummies.api import compss_wait_on
-    from datagen.dummies.constraint import constraint
+    from datagen.datagen.dummies.task import task
+    from datagen.datagen.dummies.api import compss_wait_on
+    from datagen.datagen.dummies.constraint import constraint
 
 from GridCalEngine.Compilers.circuit_to_data import compile_numerical_circuit_at, NumericalCircuit
 

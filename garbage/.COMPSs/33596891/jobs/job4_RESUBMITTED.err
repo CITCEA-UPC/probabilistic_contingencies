@@ -1,0 +1,83 @@
+[EXECUTOR] executeTask - Error in task execution
+es.bsc.compss.types.execution.exceptions.JobExecutionException: Job 4 exit with value 1
+	at es.bsc.compss.invokers.external.piped.PipedInvoker.invokeExternalMethod(PipedInvoker.java:296)
+	at es.bsc.compss.invokers.external.ExternalInvoker.invokeMethod(ExternalInvoker.java:389)
+	at es.bsc.compss.invokers.Invoker.invoke(Invoker.java:336)
+	at es.bsc.compss.invokers.Invoker.runInvocation(Invoker.java:292)
+	at es.bsc.compss.executor.Executor.runInvocation(Executor.java:512)
+	at es.bsc.compss.executor.Executor.redirectStreamsAndRun(Executor.java:448)
+	at es.bsc.compss.executor.Executor.filesWrapperAndRun(Executor.java:387)
+	at es.bsc.compss.executor.Executor.sandBoxWrapperAndRun(Executor.java:358)
+	at es.bsc.compss.executor.Executor.resourcesWrapperAndRun(Executor.java:337)
+	at es.bsc.compss.executor.Executor.totalTimerAndTracingWrapperAndRun(Executor.java:311)
+	at es.bsc.compss.executor.Executor.execute(Executor.java:287)
+	at es.bsc.compss.executor.Executor.processInvocation(Executor.java:253)
+	at es.bsc.compss.types.execution.InvocationExecutionRequest.run(InvocationExecutionRequest.java:60)
+	at es.bsc.compss.executor.Executor.processRequests(Executor.java:223)
+	at es.bsc.compss.executor.Executor.run(Executor.java:175)
+	at es.bsc.compss.execution.ExecutionPlatform$4.run(ExecutionPlatform.java:269)
+	at java.lang.Thread.run(Thread.java:748)
+19/upc848455/packages/GridCalEngine/Compilers/circuit_to_data.py", line 1972, in compile_numerical_circuit_at
+    bus_voltage_used = np.zeros(circuit.get_bus_number(), dtype=bool)
+AttributeError: 'dict' object has no attribute 'get_bus_number'
+2025-09-30 11:31:01,295 ERROR pycompss.runtime.task.worker worker - Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 214, in check_stability_and_pf
+    return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 76, in detect_islands
+    nc = gce.compile_numerical_circuit_at(grid, t_idx=None)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/Compilers/circuit_to_data.py", line 1972, in compile_numerical_circuit_at
+    bus_voltage_used = np.zeros(circuit.get_bus_number(), dtype=bool)
+AttributeError: 'dict' object has no attribute 'get_bus_number'
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 214, in check_stability_and_pf
+    return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 76, in detect_islands
+    nc = gce.compile_numerical_circuit_at(grid, t_idx=None)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/Compilers/circuit_to_data.py", line 1972, in compile_numerical_circuit_at
+    bus_voltage_used = np.zeros(circuit.get_bus_number(), dtype=bool)
+AttributeError: 'dict' object has no attribute 'get_bus_number'
+2025-09-30 11:31:01,299 ERROR pycompss.runtime.task.worker worker - Check that all parameters have been defined with an absolute import path (even if in the same file)
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 214, in check_stability_and_pf
+    return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 76, in detect_islands
+    nc = gce.compile_numerical_circuit_at(grid, t_idx=None)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/Compilers/circuit_to_data.py", line 1972, in compile_numerical_circuit_at
+    bus_voltage_used = np.zeros(circuit.get_bus_number(), dtype=bool)
+AttributeError: 'dict' object has no attribute 'get_bus_number'

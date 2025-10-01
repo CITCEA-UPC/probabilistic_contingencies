@@ -1,0 +1,83 @@
+[EXECUTOR] executeTask - Error in task execution
+sk.worker worker - WORKER EXCEPTION IN Process-21 - Attribute Error Exception
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 118, in check_stability_and_pf
+    grid = pickle.loads(kwargs["grid"])
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+2025-09-30 11:39:28,637 ERROR pycompss.runtime.task.worker worker - Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 118, in check_stability_and_pf
+    grid = pickle.loads(kwargs["grid"])
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 118, in check_stability_and_pf
+    grid = pickle.loads(kwargs["grid"])
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+2025-09-30 11:39:28,639 ERROR pycompss.runtime.task.worker worker - Check that all parameters have been defined with an absolute import path (even if in the same file)
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 249, in call
+    result = self.execute_user_code(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1171, in execute_user_code
+    raise exc
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1154, in execute_user_code
+    user_returns = self.user_function(
+  File "/home/upc/upc848455/probabilistic_contingencies/main_parallel.py", line 118, in check_stability_and_pf
+    grid = pickle.loads(kwargs["grid"])
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'

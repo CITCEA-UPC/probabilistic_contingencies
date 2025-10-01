@@ -3,7 +3,7 @@ import time
 import numpy as np
 import copy
 
-from datagen.src import sampling 
+from datagen.datagen.src import sampling 
 
 from .utils import get_case_results
 from stability_analysis.operating_point_from_datagenerator import datagen_OP

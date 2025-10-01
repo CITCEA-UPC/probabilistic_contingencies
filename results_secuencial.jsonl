@@ -1,1 +1,0 @@
-{"case_id": 1, "level": "single", "type_combo": "line", "elements": [{"type": "line", "id": 0}], "gce.powerflow_converged": true, "gce.run_powerflow_converged": true, "stability": "only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices", "islands": false}

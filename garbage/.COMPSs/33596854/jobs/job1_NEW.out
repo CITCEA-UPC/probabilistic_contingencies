@@ -1,0 +1,125 @@
+[EXECUTOR] executeTask - Error in task execution
+sk.worker worker - WORKER EXCEPTION IN Process-23
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 515, in deserialize_from_handler
+    ret = serializer.load(handler)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 196, in call
+    self.reveal_objects(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 430, in reveal_objects
+    self.retrieve_content(arg, "", python_mpi, collections_layouts)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 527, in retrieve_content
+    argument.content = self.recover_object(argument)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1002, in recover_object
+    return deserialize_from_file(original_path, LOGGER)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 574, in deserialize_from_file
+    ret, close_handler = deserialize_from_handler(handler, True, logger)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 560, in deserialize_from_handler
+    raise SerializerException(error_msg) from general_exception
+pycompss.util.exceptions.SerializerException: ERROR: Cannot deserialize object with serializer: <module 'pickle' from '/apps/PYTHON/3.10.2/INTEL/lib/python3.10/pickle.py'>
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 515, in deserialize_from_handler
+    ret = serializer.load(handler)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+
+
+2025-09-30 11:14:13,205 ERROR pycompss.runtime.task.worker worker - Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 515, in deserialize_from_handler
+    ret = serializer.load(handler)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 196, in call
+    self.reveal_objects(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 430, in reveal_objects
+    self.retrieve_content(arg, "", python_mpi, collections_layouts)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 527, in retrieve_content
+    argument.content = self.recover_object(argument)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1002, in recover_object
+    return deserialize_from_file(original_path, LOGGER)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 574, in deserialize_from_file
+    ret, close_handler = deserialize_from_handler(handler, True, logger)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 560, in deserialize_from_handler
+    raise SerializerException(error_msg) from general_exception
+pycompss.util.exceptions.SerializerException: ERROR: Cannot deserialize object with serializer: <module 'pickle' from '/apps/PYTHON/3.10.2/INTEL/lib/python3.10/pickle.py'>
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 515, in deserialize_from_handler
+    ret = serializer.load(handler)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+
+
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 515, in deserialize_from_handler
+    ret = serializer.load(handler)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/worker/commons/worker.py", line 375, in task_execution
+    task_output = getattr(module, method_name)(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 161, in task_decorator
+    return self.__decorator_body__(user_function, args, kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/api/task.py", line 222, in __decorator_body__
+    worker_result = worker.call(*args, **kwargs)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 196, in call
+    self.reveal_objects(
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 430, in reveal_objects
+    self.retrieve_content(arg, "", python_mpi, collections_layouts)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 527, in retrieve_content
+    argument.content = self.recover_object(argument)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/runtime/task/worker.py", line 1002, in recover_object
+    return deserialize_from_file(original_path, LOGGER)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 574, in deserialize_from_file
+    ret, close_handler = deserialize_from_handler(handler, True, logger)
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 560, in deserialize_from_handler
+    raise SerializerException(error_msg) from general_exception
+pycompss.util.exceptions.SerializerException: ERROR: Cannot deserialize object with serializer: <module 'pickle' from '/apps/PYTHON/3.10.2/INTEL/lib/python3.10/pickle.py'>
+Traceback (most recent call last):
+  File "/apps/COMPSs/3.3/Bindings/python/3/pycompss/util/serialization/serializer.py", line 515, in deserialize_from_handler
+    ret = serializer.load(handler)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 857, in extend
+    self.append(value)
+  File "/gpfs/projects/bsc19/upc848455/packages/GridCalEngine/basic_structures.py", line 850, in append
+    if value not in self._set:
+AttributeError: 'ListSet' object has no attribute '_set'
+
+
