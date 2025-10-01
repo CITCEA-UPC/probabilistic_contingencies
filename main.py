@@ -6,28 +6,52 @@ import threading
 import warnings
 import numpy as np
 import pandas as pd
-
+import copy
+import pickle
+import sys
+import os
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
+
+# Small signal imports
 from small_signal_analysis import *
-from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, \
-    assign_SlackBus_to_grid
+from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, assign_SlackBus_to_grid
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
 from stability_analysis.preprocess import read_data
 
-# PyCOMPSs imports
-from pycompss.api.task import task
-from pycompss.api.api import compss_wait_on
+'''from small_signal_analysis import *
+from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, assign_SlackBus_to_grid
+from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
+from stability_analysis.preprocess import read_data'''
 
 global DEBUG
+global LOGS
+global DEBUG_PYCOMPSS
+global NORD4
 DEBUG = True
+LOGS = False
+DEBUG_PYCOMPSS = True
+NORD4 = False
 
-file_lock = threading.Lock()
+if NORD4:
+    sys.path.append("/home/upc/upc848455/probabilistic_contingencies/stability_analysis")
+    print(os.path.abspath("."))
+else:
+    sys.path.append("rC:\\Users\\alexu\\Desktop\\git\probabilistic_contingencies")
+# PyCOMPSs imports
+try:
+    from pycompss.api.task import task
+    from pycompss.api.api import compss_wait_on
+except ImportError:
+    from datagen.datagen.dummies.task import task  
+    from datagen.datagen.dummies.api import compss_wait_on
+if LOGS:
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
 
-warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
+#warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
-warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
-
+#warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
 
 def read_excel_sheets_as_dict(file_path):
     """
@@ -53,7 +77,6 @@ def detect_islands(grid):
     results = multi_island_pf_nc(nc, options=options)
     #print(results)'''
     islas_list = nc.split_into_islands()
-
 
     return len(islas_list) > 1
 
@@ -89,8 +112,19 @@ def check(grid):
         if not generator.active:
             raise Exception(f"Generator at index {idx} is not active")
 
-@task(returns=4)
-def check_stability_and_pf(grid, d_grid, d_raw_data):
+@task(returns=5)
+def check_stability_and_pf(**kwargs):
+    grid = pickle.loads(kwargs["grid"])
+    d_grid = kwargs["d_grid"]
+    d_raw_data = kwargs["d_raw_data"]
+
+    pf_results = None
+    pf_converged = None
+    run_pf_results = None
+    run_pf_converged = None
+    islands = None
+    stability = None
+    error = False
 
     try:
         pf_results = gce.power_flow(grid)
@@ -100,18 +134,15 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         print(f"Error during powerflow and run powerflow check: {e}")
         # gce.save_file(grid, "exemple.gridcal")
         # sys.exit()
-        pf_converged = None
-        run_pf_converged = None
+        error = str(e)
+
     try:
         run_pf_results = GridCal_powerflow.run_powerflow(grid, Qconrol_mode=False)
         run_pf_converged = run_pf_results.convergence_reports[0].converged_[0]
 
         # Update PF results and operation point of generator elements
         d_pf = process_powerflow.update_OP(grid, run_pf_results, d_raw_data)
-
-        d_grid, d_pf = fill_d_grid_after_powerflow.fill_d_grid(d_grid,
-                                                               grid, d_pf,
-                                                               d_raw_data, d_op)
+        d_grid, d_pf = fill_d_grid_after_powerflow.fill_d_grid(d_grid, grid, d_pf, d_raw_data, d_op)
 
         # %% READ PARAMETERS
 
@@ -139,12 +170,10 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         connect_fun = 'append_and_connect'
         save_ss_matrices = False
 
-        l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(
-            d_grid, delta_slk, connect_fun, save_ss_matrices)
+        l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(d_grid, delta_slk, connect_fun, save_ss_matrices)
 
         # Generate generator units State-Space Model
-        l_blocks, l_states = generate_elements.generate_SS_elements(
-            d_grid, delta_slk, l_blocks, l_states, connect_fun, save_ss_matrices)
+        l_blocks, l_states = generate_elements.generate_SS_elements(d_grid, delta_slk, l_blocks, l_states, connect_fun, save_ss_matrices)
 
         # %% BUILD FULL SYSTEM STATE-SPACE MODEL
 
@@ -155,8 +184,8 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         # Build full system state-space model
 
         inputs, outputs = build_ss.select_io(l_blocks, var_in, var_out)
-        ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun,
-                                  save_ss_matrices)
+        #ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun, save_ss_matrices)
+        ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun, True)
 
         # %% SMALL-SIGNAL ANALYSIS
 
@@ -175,16 +204,12 @@ def check_stability_and_pf(grid, d_grid, d_raw_data):
         # # Obtain the participation factors for the selected modes
         # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
         # # Obtain the participation factors >= tol, for the selected modes
-        return stability, pf_converged, run_pf_converged, detect_islands(grid)
+        
     except Exception as e:
-
-        #print(f"Error during stability check: {e}")
-        # gce.save_file(grid, "exemple.gridcal")
-        # sys.exit()
-        return str(e), pf_converged, run_pf_converged, detect_islands(grid)
-
-
-
+        error = str(e)
+        print(f"Error during stability check: {e}")
+    
+    return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
 
 def remove_existing_result_file(path='results_parallel.jsonl'):
     """
@@ -199,6 +224,11 @@ def remove_existing_result_file(path='results_parallel.jsonl'):
     else:
         print(f"No existing file found at: {path}")
 
+@task(returns=1)
+def dummy(i):
+    print("################ ", i+1)
+    return i+1
+
 
 if __name__ == "__main__":
     # Path to the grid file
@@ -209,14 +239,19 @@ if __name__ == "__main__":
     Number of transformers: 9
     '''
     # Alternative example:
-    GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
-
-    # GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
+    PATH_NORD4 = '/home/upc/upc848455/probabilistic_contingencies/'
+    if NORD4:
+        GRID_FILE = PATH_NORD4 + 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
+    else:
+        GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
 
     # Open the grid
     grid = gce.open_file(GRID_FILE)
 
-    filename= 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
+    if NORD4:
+        filename= PATH_NORD4 + 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
+    else:
+        filename = 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
     d_grid = read_excel_sheets_as_dict(filename+'d_grid.xlsx')
     d_raw_data = read_excel_sheets_as_dict(filename+'d_raw_data.xlsx')
     d_opf = read_excel_sheets_as_dict(filename+'d_opf.xlsx')
@@ -227,7 +262,10 @@ if __name__ == "__main__":
     d_grid['T_VSC']['Vn'] = d_grid['T_VSC']['Vn'] / 1e3
 
     excel_lines_ratings = "IEEE_118_Lines"
-    path_data = 'stability_analysis/stability_analysis/data/'
+    if NORD4:
+        path_data = PATH_NORD4 + 'stability_analysis/stability_analysis/data/'
+    else:
+        path_data = 'stability_analysis/stability_analysis/data/'
     excel_lines_ratings = os.path.join(path_data, "cases", excel_lines_ratings + ".csv")
     lines_ratings = pd.read_csv(excel_lines_ratings)
 
@@ -260,14 +298,35 @@ if __name__ == "__main__":
     num_lines = len(grid.lines)
     num_generators = len(grid.generators)
     num_transformers = len(grid.transformers2w)
+    from scipy import linalg
+    linalg.eig(np.ones([1000,1000]),left=False, right=False)
+    print("OKKKKK, LINALG")
+
     print(f"Number of lines: {num_lines}")
     print(f"Number of generators: {num_generators}")
     print(f"Number of transformers: {num_transformers}")
     # ----------------------------------------------------------------
+    # --------------------------TEST PYCOMPSS--------------------------------------
+    if DEBUG_PYCOMPSS:
+        print("TESTING PYCOMPSS")
+        futures = []
+        for i in range(3):
+            print(i)
+            futures.append(dummy(i))
+
+        futures = compss_wait_on(futures)
+        print(futures)
+        
+        print("PYCOMPSS OKKKKK")
+    
+    # --------------------------TEST PYCOMPSS--------------------------------------
+
+
+
 
     assign_Generators_to_grid.assign_PVGen(GridCal_grid=grid, d_raw_data=d_raw_data, d_op=d_op, voltage_profile_list=True, solved_point=True, d_pf=d_opf)
     assign_PQ_Loads_to_grid.assign_PQ_load(grid, d_raw_data)
-
+    print("Paso por aquí 0")
     for bus in grid.buses:
         bus_num = int(bus.code)
         idx = d_opf['pf_bus'].query('bus == @bus_num').index[0]
@@ -279,20 +338,22 @@ if __name__ == "__main__":
     assign_SlackBus_to_grid.assign_slack_bus(grid, slack_bus_num)
 
     # Calculate Power Flow
+    print("Paso por aquí 1")
     pf_results = GridCal_powerflow.run_powerflow(grid,SolverType.NR,Qconrol_mode=False)
 
     # Remove old file if it exists
     
     #remove_existing_result_file('results_parallel.jsonl')
-
+    print("Paso por aquí 2")
     if pf_results.convergence_reports[0].converged_[0]:
-
+        print("Paso por aquí 2.1")
         d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
-
+        print("Paso por aquí 2.2")
         stability, T_EIG = calculate_small_signal(d_raw_data, d_op, grid, d_grid, d_sg, d_vsc, d_pf)
     else:
         print('Base case power flow does not converge')
     cases = 0
+    print("Paso por aquí 3")
     total_cases = (
             num_lines + num_transformers + num_generators +  # fallos individuales
             num_lines * (num_lines - 1) +  # línea-línea (sin repetirse consigo misma)
@@ -315,13 +376,16 @@ if __name__ == "__main__":
     FAILURE_PROBABILITY = 100
     # ======================[ LINES ]======================
     # ------------------ Simulate first-level failures ------------------
+
     for idx, line in enumerate(grid.lines):
         line.active = False
         cases += 1
         print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
-
+        kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
+        
         result = {
+            'errors': error,
             'case_id': cases,
             'level': 'single',
             'type_combo': 'line',
@@ -333,12 +397,17 @@ if __name__ == "__main__":
             'stability': stability,
             'islands': islands
         }
+        futures.append(result)
+        print("Deberia pasar por aqui")
         if DEBUG:
 
             print("abans futures")
-            futures.append(result)
             futures = compss_wait_on(futures)
-            with open("results_parallel.json", "w") as f:
+            print(futures)
+            temp_path = results_temporal.json
+            if NORD4:
+                temp_path = PATH_NORD4 + temp_path
+            with open(temp_path, "w") as f:
                 json.dump(futures, f, indent=2)
             print("Results saved to results_parallel.jsonl")
             sys.exit()
@@ -351,10 +420,11 @@ if __name__ == "__main__":
                 line2.active = False
                 cases += 1
                 print("Second_level_Lines-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-
-                stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+                kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
                 result = {
+                    'errors': error,
                     'case_id': cases,
                     'level': 'double',
                     'type_combo': ('line', 'line'),
@@ -376,9 +446,10 @@ if __name__ == "__main__":
             transformer.active = False
             cases += 1
             print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
-
+            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
             result = {
+                'errors': error,
                 'case_id': cases,
                 'level': 'double',
                 'type_combo': ('line', 'transformer'),
@@ -400,9 +471,11 @@ if __name__ == "__main__":
             generator.active = False
             cases += 1
             print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
+                'errors': error,
                 'case_id': cases,
                 'level': 'double',
                 'type_combo': ('line', 'generator'),
@@ -431,9 +504,11 @@ if __name__ == "__main__":
         transformer.active = False
         cases += 1
         print("First_level_Transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+        kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
         result = {
+            'errors': error,
             'case_id': cases,
             'level': 'single',
             'type_combo': 'transformer',
@@ -452,11 +527,12 @@ if __name__ == "__main__":
             if idx2 != idx:
                 transformer2.active = False
                 cases += 1
-                print("Second_level_Transformers-transformers:", cases, '/', total_cases,
-                      f'({cases / total_cases * 100:.2f}%)')
-                stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+                print("Second_level_Transformers-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+                kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
                 result = {
+                    'errors': error,
                     'case_id': cases,
                     'level': 'double',
                     'type_combo': ('transformer', 'transformer'),
@@ -478,9 +554,11 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
+                'errors': error,
                 'case_id': cases,
                 'level': 'double',
                 'type_combo': ('transformer', 'line'),
@@ -501,11 +579,12 @@ if __name__ == "__main__":
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
             cases += 1
-            print("Second_level_Transformers-generators:", cases, '/', total_cases,
-                  f'({cases / total_cases * 100:.2f}%)')
-            stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+            print("Second_level_Transformers-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
+                'errors': error,
                 'case_id': cases,
                 'level': 'double',
                 'type_combo': ('transformer', 'generator'),
@@ -532,9 +611,11 @@ if __name__ == "__main__":
         generator.active = False
         cases += 1
         print("First_level_Generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+        kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
         result = {
+            'errors': error,
             'case_id': cases,
             'level': 'single',
             'type_combo': 'generator',
@@ -553,9 +634,11 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
+                'errors': error,
                 'case_id': cases,
                 'level': 'double',
                 'type_combo': ('generator', 'line'),
@@ -575,11 +658,12 @@ if __name__ == "__main__":
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
             cases += 1
-            print("Second_level_Generators-transformers:", cases, '/', total_cases,
-                  f'({cases / total_cases * 100:.2f}%)')
-            stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+            print("Second_level_Generators-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+            kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
             result = {
+                'errors': error,
                 'case_id': cases,
                 'level': 'double',
                 'type_combo': ('generator', 'transformer'),
@@ -600,11 +684,12 @@ if __name__ == "__main__":
             if idx2 != idx:
                 generator2.active = False
                 cases += 1
-                print("Second_level_Generators-generators:", cases, '/', total_cases,
-                      f'({cases / total_cases * 100:.2f}%)')
-                stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid, d_grid, d_raw_data)
+                print("Second_level_Generators-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+                kwargs = {"grid": pickle.dumps(grid), "d_grid": d_grid, "d_raw_data": d_raw_data}
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(**kwargs)
 
                 result = {
+                    'errors': error,
                     'case_id': cases,
                     'level': 'double',
                     'type_combo': ('generator', 'generator'),
@@ -627,6 +712,9 @@ if __name__ == "__main__":
 
     # TODO: Canviar al fitxer de Nord4
     futures = compss_wait_on(futures)
-    with open("results_parallel.json", "w") as f:
+    path_json = results_parallel.json
+    if NORD4:
+        path_json = PATH_NORD4 + path_json
+    with open(path_json, "w") as f:
         json.dump(futures, f, indent=2)
     print("Results saved to results_parallel.jsonl")
