@@ -10,6 +10,7 @@ import copy
 import pickle
 import sys
 import os
+import socket
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
 
@@ -28,10 +29,15 @@ global DEBUG
 global LOGS
 global DEBUG_PYCOMPSS
 global NORD4
+
 DEBUG = True
 LOGS = False
 DEBUG_PYCOMPSS = True
 NORD4 = False
+
+hostname = socket.gethostname()
+if hostname != 'endor': # Para saber si se ejecuta en local o en NORD4
+    NORD4 = True
 
 if NORD4:
     sys.path.append("/home/upc/upc848455/probabilistic_contingencies/stability_analysis")

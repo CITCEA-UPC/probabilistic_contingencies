@@ -14,3 +14,14 @@ enqueue_compss \
   --master_working_dir="$(pwd)" \
   /home/upc/upc848455/probabilistic_contingencies/main_parallel.py
 
+enqueue_compss \
+  --pythonpath="${PYTHONPATH}" \
+  --lang=python \
+  --project_name=bsc19 \
+  --qos=bsc_cs \
+  --num_nodes=1 \
+  --job_execution_dir="$(pwd)" \
+  --log_dir="$(pwd)" \
+  --worker_working_dir="$(pwd)" \
+  --master_working_dir="$(pwd)" \
+  /home/upc/upc848455/probabilistic_contingencies/main_parallel.py
