@@ -200,6 +200,8 @@ wheels
 #Logs pycompss
 logs/
 .enqueue_compss
+*.err
+*.out
 
 #Varios
 results_temporal.json
