@@ -31,7 +31,7 @@ global LOGS
 global DEBUG_PYCOMPSS
 global NORD4
 
-DEBUG = True
+DEBUG = False
 LOGS = False
 DEBUG_PYCOMPSS = True
 NORD4 = False
@@ -123,16 +123,8 @@ def check(grid):
 
 #def check_stability_and_pf(**kwargs):
 @task(returns=5)
-def check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
-    """
-    Función que verifica la estabilidad y power flow de una grid cargada desde archivo.
-    
-    Parameters:
-    - grid_filename (str): Nombre del archivo de la grid a cargar
-    - d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf: Diccionarios de datos
-    """
-    # Cargar la grid desde el archivo
-    grid = GridCalEngine.open_file(grid_filename)
+def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
+    grid = GridCalEngine.open_file(path)
 
     '''grid = kwargs["grid"]
     d_grid = kwargs["d_grid"]
@@ -231,32 +223,6 @@ def check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc,
     
     return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
 
-def generate_grid_filename(case_id, level, type_combo, elements):
-    """
-    Genera un nombre de archivo para la grid basado en el tipo de contingencia.
-    
-    Parameters:
-    - case_id (int): ID del caso
-    - level (str): Nivel de la contingencia ('single' o 'double')
-    - type_combo (str or tuple): Tipo de combinación de elementos
-    - elements (list): Lista de elementos involucrados
-    
-    Returns:
-    - str: Nombre del archivo generado
-    """
-    if level == 'single':
-        filename = f"grid_case_{case_id}_{type_combo}_{elements[0]['id']}.gridcal"
-    else:  # double level
-        if isinstance(type_combo, tuple):
-            combo_str = "_".join(type_combo)
-        else:
-            combo_str = str(type_combo)
-        element_ids = "_".join([str(elem['id']) for elem in elements])
-        filename = f"grid_case_{case_id}_{combo_str}_{element_ids}.gridcal"
-    
-    return filename
-
-
 def remove_existing_result_file(path='results_parallel.jsonl'):
     """
     Deletes the existing results file if it exists.
@@ -269,6 +235,88 @@ def remove_existing_result_file(path='results_parallel.jsonl'):
         print(f"Removed existing file: {path}")
     else:
         print(f"No existing file found at: {path}")
+
+
+def create_temp_grids_folder():
+    """
+    Creates the temp_grids folder if it doesn't exist.
+    Takes into account if running on local machine or NORD4.
+    """
+    if NORD4:
+        # On NORD4, use the full path
+        temp_grids_path = os.path.join(PATH_NORD4, 'temp_grids')
+    else:
+        # On local machine, use relative path
+        temp_grids_path = 'temp_grids'
+    
+    if not os.path.exists(temp_grids_path):
+        os.makedirs(temp_grids_path)
+        print(f"Created temp_grids folder at: {temp_grids_path}")
+
+
+def generate_grid_filename(case_id, level, type_combo, elements):
+    """
+    Generates a filename for the grid based on the contingency case information.
+    
+    Parameters:
+    - case_id (int): Case identifier
+    - level (str): 'single' or 'double' 
+    - type_combo (str or tuple): Type of contingency combination
+    - elements (list): List of elements involved in the contingency
+    
+    Returns:
+    - str: Generated filename (without folder path)
+    """
+    if level == 'single':
+        return f"case_{case_id}_{type_combo}.gridcal"
+    else:
+        # For double contingencies
+        type1, type2 = type_combo
+        return f"case_{case_id}_{type1}_{type2}.gridcal"
+
+
+def save_grid_to_temp_folder(grid, filename):
+    """
+    Saves the grid to the temp_grids folder with the specified filename.
+    Takes into account if running on local machine or NORD4.
+    
+    Parameters:
+    - grid: The grid object to save
+    - filename (str): The filename (without folder path)
+    
+    Returns:
+    - str: The full path where the grid was saved
+    """
+    if NORD4:
+        # On NORD4, use the full path
+        full_path = os.path.join(PATH_NORD4, 'temp_grids', filename)
+    else:
+        # On local machine, use relative path
+        full_path = os.path.join('temp_grids', filename)
+    
+    GridCalEngine.save_file(grid, full_path)
+    return full_path
+
+
+def load_grid_from_temp_folder(filename):
+    """
+    Loads a grid from the temp_grids folder with the specified filename.
+    Takes into account if running on local machine or NORD4.
+    
+    Parameters:
+    - filename (str): The filename (without folder path)
+    
+    Returns:
+    - The loaded grid object
+    """
+    if NORD4:
+        # On NORD4, use the full path
+        full_path = os.path.join(PATH_NORD4, 'temp_grids', filename)
+    else:
+        # On local machine, use relative path
+        full_path = os.path.join('temp_grids', filename)
+    
+    return GridCalEngine.open_file(full_path)
 
 @task(returns=1)
 def dummy(i):
@@ -390,6 +438,10 @@ if __name__ == "__main__":
     # Remove old file if it exists
     
     #remove_existing_result_file('results_parallel.jsonl')
+    
+    # Create temp_grids folder if it doesn't exist
+    create_temp_grids_folder()
+    
     print("Paso por aquí 2")
     if pf_results.convergence_reports[0].converged_[0]:
         print("Paso por aquí 2.1")
@@ -423,14 +475,10 @@ if __name__ == "__main__":
     # ======================[ LINES ]======================
     # ------------------ Simulate first-level failures ------------------
 
-    # Generar nombre de archivo para el caso base
-    base_filename = generate_grid_filename(0, 'single', 'base', [{'type': 'base', 'id': 0}])
-    path = '.'
-    if NORD4:
-        path = "/home/upc/upc848455/probabilistic_contingencies/"
-    grid_filename = path + base_filename
-    GridCalEngine.save_file(grid, grid_filename)
-    error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+    # Save grid for base case
+    base_filename = "base_case.gridcal"
+    base_path = save_grid_to_temp_folder(grid, base_filename)
+    error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(base_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
     result = {
         'errors': error,
         'case_id': cases,
@@ -451,12 +499,12 @@ if __name__ == "__main__":
         print("abans futures")
         futures = compss_wait_on(futures)
         print(futures)
-        temp_path = "results_temporal.json"
+        temp_path = "results.json"
         if NORD4:
             temp_path = PATH_NORD4 + temp_path
         with open(temp_path, "w") as f:
             json.dump(futures, f, indent=2)
-        print("Results saved to results_temporal.json")
+        print("Results saved to results.json")
         sys.exit()
 
     for idx, line in enumerate(grid.lines):
@@ -464,13 +512,10 @@ if __name__ == "__main__":
         cases += 1
         print("First_level_Lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
 
-        # Generar nombre de archivo y guardar grid
-        elements = [{'type': 'line', 'id': idx}]
-        filename = generate_grid_filename(cases, 'single', 'line', elements)
-        grid_filename = path + filename
-        GridCalEngine.save_file(grid, grid_filename)
-        
-        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+        # Generate filename and save grid
+        filename = generate_grid_filename(cases, 'single', 'line', [{'type': 'line', 'id': idx}])
+        grid_path = save_grid_to_temp_folder(grid, filename)
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
         
         result = {
             'errors': error,
@@ -508,14 +553,10 @@ if __name__ == "__main__":
                 line2.active = False
                 cases += 1
                 print("Second_level_Lines-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-                
-                # Generar nombre de archivo y guardar grid
-                elements = [{'type': 'line', 'id': idx}, {'type': 'line', 'id': idx2}]
-                filename = generate_grid_filename(cases, 'double', ('line', 'line'), elements)
-                grid_filename = path + filename
-                GridCalEngine.save_file(grid, grid_filename)
-                
-                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+                # Generate filename and save grid
+                filename = generate_grid_filename(cases, 'double', ('line', 'line'), [{'type': 'line', 'id': idx}, {'type': 'line', 'id': idx2}])
+                grid_path = save_grid_to_temp_folder(grid, filename)
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
                 result = {
                     'errors': error,
@@ -540,14 +581,10 @@ if __name__ == "__main__":
             transformer.active = False
             cases += 1
             print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            
-            # Generar nombre de archivo y guardar grid
-            elements = [{'type': 'line', 'id': idx}, {'type': 'transformer', 'id': idx2}]
-            filename = generate_grid_filename(cases, 'double', ('line', 'transformer'), elements)
-            grid_filename = path + filename
-            GridCalEngine.save_file(grid, grid_filename)
-            
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            # Generate filename and save grid
+            filename = generate_grid_filename(cases, 'double', ('line', 'transformer'), [{'type': 'line', 'id': idx}, {'type': 'transformer', 'id': idx2}])
+            grid_path = save_grid_to_temp_folder(grid, filename)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
             result = {
                 'errors': error,
                 'case_id': cases,
@@ -571,14 +608,10 @@ if __name__ == "__main__":
             generator.active = False
             cases += 1
             print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            
-            # Generar nombre de archivo y guardar grid
-            elements = [{'type': 'line', 'id': idx}, {'type': 'generator', 'id': idx2}]
-            filename = generate_grid_filename(cases, 'double', ('line', 'generator'), elements)
-            grid_filename = path + filename
-            GridCalEngine.save_file(grid, grid_filename)
-            
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            # Generate filename and save grid
+            filename = generate_grid_filename(cases, 'double', ('line', 'generator'), [{'type': 'line', 'id': idx}, {'type': 'generator', 'id': idx2}])
+            grid_path = save_grid_to_temp_folder(grid, filename)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -610,14 +643,10 @@ if __name__ == "__main__":
         transformer.active = False
         cases += 1
         print("First_level_Transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        
-        # Generar nombre de archivo y guardar grid
-        elements = [{'type': 'transformer', 'id': idx}]
-        filename = generate_grid_filename(cases, 'single', 'transformer', elements)
-        grid_filename = path + filename
-        GridCalEngine.save_file(grid, grid_filename)
-        
-        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+        # Generate filename and save grid
+        filename = generate_grid_filename(cases, 'single', 'transformer', [{'type': 'transformer', 'id': idx}])
+        grid_path = save_grid_to_temp_folder(grid, filename)
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
         result = {
             'errors': error,
@@ -640,14 +669,10 @@ if __name__ == "__main__":
                 transformer2.active = False
                 cases += 1
                 print("Second_level_Transformers-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-                
-                # Generar nombre de archivo y guardar grid
-                elements = [{'type': 'transformer', 'id': idx}, {'type': 'transformer', 'id': idx2}]
-                filename = generate_grid_filename(cases, 'double', ('transformer', 'transformer'), elements)
-                grid_filename = path + filename
-                GridCalEngine.save_file(grid, grid_filename)
-                
-                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+                # Generate filename and save grid
+                filename = generate_grid_filename(cases, 'double', ('transformer', 'transformer'), [{'type': 'transformer', 'id': idx}, {'type': 'transformer', 'id': idx2}])
+                grid_path = save_grid_to_temp_folder(grid, filename)
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
                 result = {
                     'errors': error,
@@ -672,14 +697,10 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            
-            # Generar nombre de archivo y guardar grid
-            elements = [{'type': 'transformer', 'id': idx}, {'type': 'line', 'id': idx2}]
-            filename = generate_grid_filename(cases, 'double', ('transformer', 'line'), elements)
-            grid_filename = path + filename
-            GridCalEngine.save_file(grid, grid_filename)
-            
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            # Generate filename and save grid
+            filename = generate_grid_filename(cases, 'double', ('transformer', 'line'), [{'type': 'transformer', 'id': idx}, {'type': 'line', 'id': idx2}])
+            grid_path = save_grid_to_temp_folder(grid, filename)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -704,14 +725,10 @@ if __name__ == "__main__":
             generator.active = False
             cases += 1
             print("Second_level_Transformers-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            
-            # Generar nombre de archivo y guardar grid
-            elements = [{'type': 'transformer', 'id': idx}, {'type': 'generator', 'id': idx2}]
-            filename = generate_grid_filename(cases, 'double', ('transformer', 'generator'), elements)
-            grid_filename = path + filename
-            GridCalEngine.save_file(grid, grid_filename)
-            
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            # Generate filename and save grid
+            filename = generate_grid_filename(cases, 'double', ('transformer', 'generator'), [{'type': 'transformer', 'id': idx}, {'type': 'generator', 'id': idx2}])
+            grid_path = save_grid_to_temp_folder(grid, filename)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -741,14 +758,10 @@ if __name__ == "__main__":
         generator.active = False
         cases += 1
         print("First_level_Generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-        
-        # Generar nombre de archivo y guardar grid
-        elements = [{'type': 'generator', 'id': idx}]
-        filename = generate_grid_filename(cases, 'single', 'generator', elements)
-        grid_filename = path + filename
-        GridCalEngine.save_file(grid, grid_filename)
-        
-        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+        # Generate filename and save grid
+        filename = generate_grid_filename(cases, 'single', 'generator', [{'type': 'generator', 'id': idx}])
+        grid_path = save_grid_to_temp_folder(grid, filename)
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
         result = {
             'errors': error,
@@ -770,14 +783,10 @@ if __name__ == "__main__":
             line.active = False
             cases += 1
             print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            
-            # Generar nombre de archivo y guardar grid
-            elements = [{'type': 'generator', 'id': idx}, {'type': 'line', 'id': idx2}]
-            filename = generate_grid_filename(cases, 'double', ('generator', 'line'), elements)
-            grid_filename = path + filename
-            GridCalEngine.save_file(grid, grid_filename)
-            
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            # Generate filename and save grid
+            filename = generate_grid_filename(cases, 'double', ('generator', 'line'), [{'type': 'generator', 'id': idx}, {'type': 'line', 'id': idx2}])
+            grid_path = save_grid_to_temp_folder(grid, filename)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -801,14 +810,10 @@ if __name__ == "__main__":
             transformer.active = False
             cases += 1
             print("Second_level_Generators-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-            
-            # Generar nombre de archivo y guardar grid
-            elements = [{'type': 'generator', 'id': idx}, {'type': 'transformer', 'id': idx2}]
-            filename = generate_grid_filename(cases, 'double', ('generator', 'transformer'), elements)
-            grid_filename = path + filename
-            GridCalEngine.save_file(grid, grid_filename)
-            
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            # Generate filename and save grid
+            filename = generate_grid_filename(cases, 'double', ('generator', 'transformer'), [{'type': 'generator', 'id': idx}, {'type': 'transformer', 'id': idx2}])
+            grid_path = save_grid_to_temp_folder(grid, filename)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -833,14 +838,10 @@ if __name__ == "__main__":
                 generator2.active = False
                 cases += 1
                 print("Second_level_Generators-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
-                
-                # Generar nombre de archivo y guardar grid
-                elements = [{'type': 'generator', 'id': idx}, {'type': 'generator', 'id': idx2}]
-                filename = generate_grid_filename(cases, 'double', ('generator', 'generator'), elements)
-                grid_filename = path + filename
-                GridCalEngine.save_file(grid, grid_filename)
-                
-                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_filename, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+                # Generate filename and save grid
+                filename = generate_grid_filename(cases, 'double', ('generator', 'generator'), [{'type': 'generator', 'id': idx}, {'type': 'generator', 'id': idx2}])
+                grid_path = save_grid_to_temp_folder(grid, filename)
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
 
                 result = {
                     'errors': error,
@@ -866,7 +867,7 @@ if __name__ == "__main__":
 
     # TODO: Canviar al fitxer de Nord4
     futures = compss_wait_on(futures)
-    path_json = "results_parallel.json"
+    path_json = results_parallel.json
     if NORD4:
         path_json = PATH_NORD4 + path_json
     with open(path_json, "w") as f:
