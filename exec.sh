@@ -52,6 +52,7 @@ if [ "$MODE" = "debug" ]; then
       --lang=python \
       --project_name=bsc19 \
       --qos=debug \
+      --exec_time=120 \
       --num_nodes=$NUM_NODES \
       /home/upc/upc848455/probabilistic_contingencies/main.py
 else
@@ -61,6 +62,7 @@ else
       --lang=python \
       --project_name=bsc19 \
       --qos=bsc_cs \
+      --exec_time=2880 \
       --num_nodes=$NUM_NODES \
       /home/upc/upc848455/probabilistic_contingencies/main.py
 fi

@@ -49,9 +49,12 @@ else:
 try:
     from pycompss.api.task import task
     from pycompss.api.api import compss_wait_on
+    from pycompss.api.constraint import constraint
 except ImportError:
     from datagen.datagen.dummies.task import task  
     from datagen.datagen.dummies.api import compss_wait_on
+    from datagen.datagen.dummies.constraint import constraint
+
 if LOGS:
     import logging
     logging.basicConfig(level=logging.DEBUG)
@@ -122,6 +125,8 @@ def check(grid):
             raise Exception(f"Generator at index {idx} is not active")
 
 #def check_stability_and_pf(**kwargs):
+
+@constraint(computing_units=20)
 @task(returns=5)
 def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
     grid = GridCalEngine.open_file(path)
