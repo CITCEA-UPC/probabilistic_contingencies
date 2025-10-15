@@ -504,12 +504,12 @@ if __name__ == "__main__":
         print("abans futures")
         futures = compss_wait_on(futures)
         print(futures)
-        temp_path = "results.json"
+        temp_path = "results_partial.json"
         if NORD4:
             temp_path = PATH_NORD4 + temp_path
         with open(temp_path, "w") as f:
             json.dump(futures, f, indent=2)
-        print("Results saved to results.json")
+        print("Results saved to results_partial.json")
         sys.exit()
 
     for idx, line in enumerate(grid.lines):
