@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import GridCalEngine
+import GridCalEngine as gce
 import json
 import os
 import threading
@@ -17,12 +17,15 @@ from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
 
 # Small signal imports
 from small_signal_analysis import *
-from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, assign_SlackBus_to_grid
+from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, \
+    assign_SlackBus_to_grid
+from stability_analysis.optimal_power_flow import process_optimal_power_flow
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
 from stability_analysis.preprocess import read_data
 
 '''from small_signal_analysis import *
 from stability_analysis.modify_GridCal_grid import assign_Generators_to_grid, assign_PQ_Loads_to_grid, assign_SlackBus_to_grid
+from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
 from stability_analysis.powerflow import GridCal_powerflow, process_powerflow
 from stability_analysis.preprocess import read_data'''
 
@@ -37,7 +40,7 @@ DEBUG_PYCOMPSS = True
 NORD4 = False
 
 hostname = socket.gethostname()
-if hostname != 'endor': # Para saber si se ejecuta en local o en NORD4
+if hostname != 'endor':  # Para saber si se ejecuta en local o en NORD4
     NORD4 = True
 
 if NORD4:
@@ -51,17 +54,19 @@ try:
     from pycompss.api.api import compss_wait_on
     from pycompss.api.constraint import constraint
 except ImportError:
-    from datagen.datagen.dummies.task import task  
+    from datagen.datagen.dummies.task import task
     from datagen.datagen.dummies.api import compss_wait_on
     from datagen.datagen.dummies.constraint import constraint
 
 if LOGS:
     import logging
+
     logging.basicConfig(level=logging.DEBUG)
 
-#warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
-#warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
+# warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
+
+# warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
 
 def read_excel_sheets_as_dict(file_path):
     """
@@ -75,7 +80,6 @@ def read_excel_sheets_as_dict(file_path):
     """
     xls = pd.read_excel(file_path, sheet_name=None)
     return xls
-
 
 
 def detect_islands(grid):
@@ -124,7 +128,8 @@ def check(grid):
         if not generator.active:
             raise Exception(f"Generator at index {idx} is not active")
 
-#def check_stability_and_pf(**kwargs):
+
+# def check_stability_and_pf(**kwargs):
 
 @constraint(computing_units=20)
 @task(returns=5)
@@ -187,10 +192,12 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
         connect_fun = 'append_and_connect'
         save_ss_matrices = False
 
-        l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(d_grid, delta_slk, connect_fun, save_ss_matrices)
+        l_blocks, l_states, d_grid = generate_NET.generate_SS_NET_blocks(d_grid, delta_slk, connect_fun,
+                                                                         save_ss_matrices)
 
         # Generate generator units State-Space Model
-        l_blocks, l_states = generate_elements.generate_SS_elements(d_grid, delta_slk, l_blocks, l_states, connect_fun, save_ss_matrices)
+        l_blocks, l_states = generate_elements.generate_SS_elements(d_grid, delta_slk, l_blocks, l_states, connect_fun,
+                                                                    save_ss_matrices)
 
         # %% BUILD FULL SYSTEM STATE-SPACE MODEL
 
@@ -201,7 +208,7 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
         # Build full system state-space model
 
         inputs, outputs = build_ss.select_io(l_blocks, var_in, var_out)
-        #ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun, save_ss_matrices)
+        # ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun, save_ss_matrices)
         ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun, True)
 
         # %% SMALL-SIGNAL ANALYSIS
@@ -221,12 +228,13 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
         # # Obtain the participation factors for the selected modes
         # T_modal, df_PF = small_signal.FMODAL_REDUCED(ss_sys, plot=True, modeID = [1,3,11])
         # # Obtain the participation factors >= tol, for the selected modes
-        
+
     except Exception as e:
         error = str(e)
         print(f"Error during stability check: {e}")
-    
+
     return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
+
 
 def remove_existing_result_file(path='results_parallel.jsonl'):
     """
@@ -253,7 +261,7 @@ def create_temp_grids_folder():
     else:
         # On local machine, use relative path
         temp_grids_path = 'temp_grids'
-    
+
     if not os.path.exists(temp_grids_path):
         os.makedirs(temp_grids_path)
         print(f"Created temp_grids folder at: {temp_grids_path}")
@@ -262,13 +270,13 @@ def create_temp_grids_folder():
 def generate_grid_filename(case_id, level, type_combo, elements):
     """
     Generates a filename for the grid based on the contingency case information.
-    
+
     Parameters:
     - case_id (int): Case identifier
-    - level (str): 'single' or 'double' 
+    - level (str): 'single' or 'double'
     - type_combo (str or tuple): Type of contingency combination
     - elements (list): List of elements involved in the contingency
-    
+
     Returns:
     - str: Generated filename (without folder path)
     """
@@ -284,11 +292,11 @@ def save_grid_to_temp_folder(grid, filename):
     """
     Saves the grid to the temp_grids folder with the specified filename.
     Takes into account if running on local machine or NORD4.
-    
+
     Parameters:
     - grid: The grid object to save
     - filename (str): The filename (without folder path)
-    
+
     Returns:
     - str: The full path where the grid was saved
     """
@@ -298,7 +306,7 @@ def save_grid_to_temp_folder(grid, filename):
     else:
         # On local machine, use relative path
         full_path = os.path.join('temp_grids', filename)
-    
+
     GridCalEngine.save_file(grid, full_path)
     return full_path
 
@@ -307,10 +315,10 @@ def load_grid_from_temp_folder(filename):
     """
     Loads a grid from the temp_grids folder with the specified filename.
     Takes into account if running on local machine or NORD4.
-    
+
     Parameters:
     - filename (str): The filename (without folder path)
-    
+
     Returns:
     - The loaded grid object
     """
@@ -320,13 +328,14 @@ def load_grid_from_temp_folder(filename):
     else:
         # On local machine, use relative path
         full_path = os.path.join('temp_grids', filename)
-    
+
     return GridCalEngine.open_file(full_path)
+
 
 @task(returns=1)
 def dummy(i):
-    print("################ ", i+1)
-    return i+1
+    print("################ ", i + 1)
+    return i + 1
 
 
 if __name__ == "__main__":
@@ -337,56 +346,63 @@ if __name__ == "__main__":
     Number of generators: 54
     Number of transformers: 9
     '''
-    # Alternative example:
+
     PATH_NORD4 = '/home/upc/upc848455/probabilistic_contingencies/'
-    if NORD4:
-        GRID_FILE = PATH_NORD4 + 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
-    else:
-        GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
+    GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
+    filename = 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
+    path_data = 'stability_analysis/stability_analysis/data/'
+    excel_data = "IEEE_118_FULL"
+    excel_lines_ratings = "IEEE_118_Lines"
 
-    # Open the grid
+    if NORD4:
+        GRID_FILE = PATH_NORD4 + GRID_FILE
+        filename = PATH_NORD4 + filename
+        path_data = PATH_NORD4 + path_data
+
+    # Open the grid and info
     grid = gce.open_file(GRID_FILE)
-
-    if NORD4:
-        filename= PATH_NORD4 + 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
-    else:
-        filename = 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
-    d_grid = read_excel_sheets_as_dict(filename+'d_grid.xlsx')
-    d_raw_data = read_excel_sheets_as_dict(filename+'d_raw_data.xlsx')
-    d_opf = read_excel_sheets_as_dict(filename+'d_opf.xlsx')
-    d_op = read_excel_sheets_as_dict(filename+'d_op.xlsx')
+    d_grid = read_excel_sheets_as_dict(filename + 'd_grid.xlsx')
+    d_raw_data = read_excel_sheets_as_dict(filename + 'd_raw_data.xlsx')
+    d_opf = read_excel_sheets_as_dict(filename + 'd_opf.xlsx')
+    d_op = read_excel_sheets_as_dict(filename + 'd_op.xlsx')
 
     # check d_grid Vn it has to be in [kV] !!
     d_grid['T_SG']['Vn'] = d_grid['T_SG']['Vn'] / 1e3
     d_grid['T_VSC']['Vn'] = d_grid['T_VSC']['Vn'] / 1e3
 
-    excel_lines_ratings = "IEEE_118_Lines"
-    if NORD4:
-        path_data = PATH_NORD4 + 'stability_analysis/stability_analysis/data/'
-    else:
-        path_data = 'stability_analysis/stability_analysis/data/'
+    # Create temp_grids folder if it doesn't exist
+    create_temp_grids_folder()
+
+    assign_Generators_to_grid.assign_PVGen(GridCal_grid=grid, d_raw_data=d_raw_data, d_op=d_op,
+                                           voltage_profile_list=True, solved_point=True, d_pf=d_opf)
+    # assign_PQ_Loads_to_grid.assign_PQ_load(grid, d_raw_data)
+
+    for bus in grid.buses:
+        bus_num = int(bus.code)
+        idx = d_opf['pf_bus'].query('bus == @bus_num').index[0]
+
+        bus.Vm0 = d_opf['pf_bus'].loc[idx, 'Vm']
+        bus.Va0 = d_opf['pf_bus'].loc[idx, 'theta'] / 180 * np.pi
+
+    slack_bus_num = d_grid['T_global'].loc[0, 'ref_bus']
+    assign_SlackBus_to_grid.assign_slack_bus(grid, slack_bus_num)
+
+    excel_sg = os.path.join(path_data, "cases", excel_data + "_data_sg.xlsx")
+    excel_vsc = os.path.join(path_data, "cases", excel_data + "_data_vsc.xlsx")
     excel_lines_ratings = os.path.join(path_data, "cases", excel_lines_ratings + ".csv")
     lines_ratings = pd.read_csv(excel_lines_ratings)
-
-
 
     for line in grid.lines:
         bf = int(line.bus_from.code)
         bt = int(line.bus_to.code)
         line.rate = float(lines_ratings.loc[
-            lines_ratings.query('Bus_from == @bf and Bus_to == @bt').index[
-                0], 'Max Flow (MW)'])
+                              lines_ratings.query('Bus_from == @bf and Bus_to == @bt').index[0], 'Max Flow (MW)'])
 
     for trafo in grid.transformers2w:
         bf = int(trafo.bus_from.code)
         bt = int(trafo.bus_to.code)
         trafo.rate = float(lines_ratings.loc[
-            lines_ratings.query('Bus_from == @bf and Bus_to == @bt').index[
-                0], 'Max Flow (MW)'])
-
-    excel_data = "IEEE_118_FULL"
-    excel_sg = os.path.join(path_data, "cases", excel_data + "_data_sg.xlsx")
-    excel_vsc = os.path.join(path_data, "cases", excel_data + "_data_vsc.xlsx")
+                               lines_ratings.query('Bus_from == @bf and Bus_to == @bt').index[0], 'Max Flow (MW)'])
 
     # Read Excel files with system data, generator data, and VSC data
     d_sg = read_data.read_data(excel_sg)
@@ -398,7 +414,8 @@ if __name__ == "__main__":
     num_generators = len(grid.generators)
     num_transformers = len(grid.transformers2w)
     from scipy import linalg
-    linalg.eig(np.ones([1000,1000]),left=False, right=False)
+
+    linalg.eig(np.ones([1000, 1000]), left=False, right=False)
     print("OKKKKK, LINALG")
 
     print(f"Number of lines: {num_lines}")
@@ -415,47 +432,56 @@ if __name__ == "__main__":
 
         futures = compss_wait_on(futures)
         print(futures)
-        
+
         print("PYCOMPSS OKKKKK")
-    
+
     # --------------------------TEST PYCOMPSS--------------------------------------
 
-
-
-
-    assign_Generators_to_grid.assign_PVGen(GridCal_grid=grid, d_raw_data=d_raw_data, d_op=d_op, voltage_profile_list=True, solved_point=True, d_pf=d_opf)
-    assign_PQ_Loads_to_grid.assign_PQ_load(grid, d_raw_data)
     print("Paso por aquí 0")
-    for bus in grid.buses:
-        bus_num = int(bus.code)
-        idx = d_opf['pf_bus'].query('bus == @bus_num').index[0]
+    P = list(d_raw_data['load']['PL'])
+    Q = list(d_raw_data['load']['QL'])
+    for i in range(81):  # Olen(P)):
+        grid.loads[i].P = float(P[i])
+        grid.loads[i].Q = float(Q[i])
+    nc = gce.compile_numerical_circuit_at(grid)
+    nc.generator_data.cost_0[:] = 0
+    nc.generator_data.cost_1[:] = 0
+    nc.generator_data.cost_2[:] = 0
 
-        bus.Vm0 = d_opf['pf_bus'].loc[idx, 'Vm']
-        bus.Va0 = d_opf['pf_bus'].loc[idx, 'theta'] / 180 * np.pi
+    pf_options = gce.PowerFlowOptions(solver_type=gce.SolverType.NR, verbose=1, tolerance=1e-8,
+                                      control_q='Direct')  # , max_iter=100)
+    opf_options = gce.OptimalPowerFlowOptions(solver=gce.SolverType.NR, verbose=0, ips_tolerance=1e-4,
+                                              ips_iterations=50)
 
-    slack_bus_num = d_grid['T_global'].loc[0, 'ref_bus']
-    assign_SlackBus_to_grid.assign_slack_bus(grid, slack_bus_num)
+    pf_results = multi_island_pf_nc(nc=nc, options=pf_options)
 
     # Calculate Power Flow
     print("Paso por aquí 1")
-    pf_results = GridCal_powerflow.run_powerflow(grid,SolverType.NR,Qconrol_mode=False)
+    d_opf_results = ac_optimal_power_flow(nc=nc,
+                                          pf_options=pf_options,
+                                          opf_options=opf_options,
+                                          # debug: bool = False,
+                                          # use_autodiff = True,
+                                          pf_init=False,
+                                          Sbus_pf=pf_results.Sbus,
+                                          voltage_pf=pf_results.voltage,
+                                          plot_error=True)
 
     # Remove old file if it exists
-    
-    #remove_existing_result_file('results_parallel.jsonl')
-    
-    # Create temp_grids folder if it doesn't exist
-    create_temp_grids_folder()
-    
+
+    # remove_existing_result_file('results_parallel.jsonl')
+
     print("Paso por aquí 2")
-    if pf_results.convergence_reports[0].converged_[0]:
-        print("Paso por aquí 2.1")
-        d_pf = process_powerflow.update_OP(grid, pf_results, d_raw_data)
+    if d_opf_results.converged:
+        d_pf = process_optimal_power_flow.update_OP(grid, d_opf_results, d_raw_data)
         print("Paso por aquí 2.2")
         stability, T_EIG = calculate_small_signal(d_raw_data, d_op, grid, d_grid, d_sg, d_vsc, d_pf)
     else:
         print('Base case power flow does not converge')
     cases = 0
+    print(stability, T_EIG)
+    sys.exit()
+
     print("Paso por aquí 3")
     total_cases = (
             num_lines + num_transformers + num_generators +  # fallos individuales
@@ -473,7 +499,6 @@ if __name__ == "__main__":
 
     print(f"Total simulations to do of contingency cases: {total_cases}")
 
-
     # ==============START SIMULATIONS======================================================
     # Probability of failure (100% means any component you deactivate will fail)
     FAILURE_PROBABILITY = 100
@@ -483,7 +508,8 @@ if __name__ == "__main__":
     # Save grid for base case
     base_filename = "base_case.gridcal"
     base_path = save_grid_to_temp_folder(grid, base_filename)
-    error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(base_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+    error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(base_path, d_grid, d_raw_data,
+                                                                                       d_op, d_sg, d_vsc, d_pf)
     result = {
         'errors': error,
         'case_id': cases,
@@ -520,8 +546,10 @@ if __name__ == "__main__":
         # Generate filename and save grid
         filename = generate_grid_filename(cases, 'single', 'line', [{'type': 'line', 'id': idx}])
         grid_path = save_grid_to_temp_folder(grid, filename)
-        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
-        
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                           d_raw_data, d_op, d_sg,
+                                                                                           d_vsc, d_pf)
+
         result = {
             'errors': error,
             'case_id': cases,
@@ -549,8 +577,6 @@ if __name__ == "__main__":
                 json.dump(futures, f, indent=2)
             print("Results saved to results_parallel.json")
             sys.exit()
-            
-            
 
         # 1) Second-level failures on lines
         for idx2, line2 in enumerate(grid.lines):
@@ -559,9 +585,12 @@ if __name__ == "__main__":
                 cases += 1
                 print("Second_level_Lines-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
                 # Generate filename and save grid
-                filename = generate_grid_filename(cases, 'double', ('line', 'line'), [{'type': 'line', 'id': idx}, {'type': 'line', 'id': idx2}])
+                filename = generate_grid_filename(cases, 'double', ('line', 'line'),
+                                                  [{'type': 'line', 'id': idx}, {'type': 'line', 'id': idx2}])
                 grid_path = save_grid_to_temp_folder(grid, filename)
-                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                                   d_raw_data, d_op,
+                                                                                                   d_sg, d_vsc, d_pf)
 
                 result = {
                     'errors': error,
@@ -579,7 +608,6 @@ if __name__ == "__main__":
                 }
                 futures.append(result)
                 line2.active = True
-            
 
         # 2) Second-level failures on transformers
         for idx2, transformer in enumerate(grid.transformers2w):
@@ -587,9 +615,12 @@ if __name__ == "__main__":
             cases += 1
             print("Second_level_Lines-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             # Generate filename and save grid
-            filename = generate_grid_filename(cases, 'double', ('line', 'transformer'), [{'type': 'line', 'id': idx}, {'type': 'transformer', 'id': idx2}])
+            filename = generate_grid_filename(cases, 'double', ('line', 'transformer'),
+                                              [{'type': 'line', 'id': idx}, {'type': 'transformer', 'id': idx2}])
             grid_path = save_grid_to_temp_folder(grid, filename)
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                               d_raw_data, d_op, d_sg,
+                                                                                               d_vsc, d_pf)
             result = {
                 'errors': error,
                 'case_id': cases,
@@ -614,9 +645,12 @@ if __name__ == "__main__":
             cases += 1
             print("Second_level_Lines-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             # Generate filename and save grid
-            filename = generate_grid_filename(cases, 'double', ('line', 'generator'), [{'type': 'line', 'id': idx}, {'type': 'generator', 'id': idx2}])
+            filename = generate_grid_filename(cases, 'double', ('line', 'generator'),
+                                              [{'type': 'line', 'id': idx}, {'type': 'generator', 'id': idx2}])
             grid_path = save_grid_to_temp_folder(grid, filename)
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                               d_raw_data, d_op, d_sg,
+                                                                                               d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -651,7 +685,9 @@ if __name__ == "__main__":
         # Generate filename and save grid
         filename = generate_grid_filename(cases, 'single', 'transformer', [{'type': 'transformer', 'id': idx}])
         grid_path = save_grid_to_temp_folder(grid, filename)
-        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                           d_raw_data, d_op, d_sg,
+                                                                                           d_vsc, d_pf)
 
         result = {
             'errors': error,
@@ -673,11 +709,16 @@ if __name__ == "__main__":
             if idx2 != idx:
                 transformer2.active = False
                 cases += 1
-                print("Second_level_Transformers-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+                print("Second_level_Transformers-transformers:", cases, '/', total_cases,
+                      f'({cases / total_cases * 100:.2f}%)')
                 # Generate filename and save grid
-                filename = generate_grid_filename(cases, 'double', ('transformer', 'transformer'), [{'type': 'transformer', 'id': idx}, {'type': 'transformer', 'id': idx2}])
+                filename = generate_grid_filename(cases, 'double', ('transformer', 'transformer'),
+                                                  [{'type': 'transformer', 'id': idx},
+                                                   {'type': 'transformer', 'id': idx2}])
                 grid_path = save_grid_to_temp_folder(grid, filename)
-                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                                   d_raw_data, d_op,
+                                                                                                   d_sg, d_vsc, d_pf)
 
                 result = {
                     'errors': error,
@@ -703,9 +744,12 @@ if __name__ == "__main__":
             cases += 1
             print("Second_level_Transformers-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             # Generate filename and save grid
-            filename = generate_grid_filename(cases, 'double', ('transformer', 'line'), [{'type': 'transformer', 'id': idx}, {'type': 'line', 'id': idx2}])
+            filename = generate_grid_filename(cases, 'double', ('transformer', 'line'),
+                                              [{'type': 'transformer', 'id': idx}, {'type': 'line', 'id': idx2}])
             grid_path = save_grid_to_temp_folder(grid, filename)
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                               d_raw_data, d_op, d_sg,
+                                                                                               d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -729,11 +773,15 @@ if __name__ == "__main__":
         for idx2, generator in enumerate(grid.generators):
             generator.active = False
             cases += 1
-            print("Second_level_Transformers-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+            print("Second_level_Transformers-generators:", cases, '/', total_cases,
+                  f'({cases / total_cases * 100:.2f}%)')
             # Generate filename and save grid
-            filename = generate_grid_filename(cases, 'double', ('transformer', 'generator'), [{'type': 'transformer', 'id': idx}, {'type': 'generator', 'id': idx2}])
+            filename = generate_grid_filename(cases, 'double', ('transformer', 'generator'),
+                                              [{'type': 'transformer', 'id': idx}, {'type': 'generator', 'id': idx2}])
             grid_path = save_grid_to_temp_folder(grid, filename)
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                               d_raw_data, d_op, d_sg,
+                                                                                               d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -766,7 +814,9 @@ if __name__ == "__main__":
         # Generate filename and save grid
         filename = generate_grid_filename(cases, 'single', 'generator', [{'type': 'generator', 'id': idx}])
         grid_path = save_grid_to_temp_folder(grid, filename)
-        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+        error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                           d_raw_data, d_op, d_sg,
+                                                                                           d_vsc, d_pf)
 
         result = {
             'errors': error,
@@ -789,9 +839,12 @@ if __name__ == "__main__":
             cases += 1
             print("Second_level_Generators-lines:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
             # Generate filename and save grid
-            filename = generate_grid_filename(cases, 'double', ('generator', 'line'), [{'type': 'generator', 'id': idx}, {'type': 'line', 'id': idx2}])
+            filename = generate_grid_filename(cases, 'double', ('generator', 'line'),
+                                              [{'type': 'generator', 'id': idx}, {'type': 'line', 'id': idx2}])
             grid_path = save_grid_to_temp_folder(grid, filename)
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                               d_raw_data, d_op, d_sg,
+                                                                                               d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -814,11 +867,15 @@ if __name__ == "__main__":
         for idx2, transformer in enumerate(grid.transformers2w):
             transformer.active = False
             cases += 1
-            print("Second_level_Generators-transformers:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+            print("Second_level_Generators-transformers:", cases, '/', total_cases,
+                  f'({cases / total_cases * 100:.2f}%)')
             # Generate filename and save grid
-            filename = generate_grid_filename(cases, 'double', ('generator', 'transformer'), [{'type': 'generator', 'id': idx}, {'type': 'transformer', 'id': idx2}])
+            filename = generate_grid_filename(cases, 'double', ('generator', 'transformer'),
+                                              [{'type': 'generator', 'id': idx}, {'type': 'transformer', 'id': idx2}])
             grid_path = save_grid_to_temp_folder(grid, filename)
-            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+            error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                               d_raw_data, d_op, d_sg,
+                                                                                               d_vsc, d_pf)
 
             result = {
                 'errors': error,
@@ -842,11 +899,15 @@ if __name__ == "__main__":
             if idx2 != idx:
                 generator2.active = False
                 cases += 1
-                print("Second_level_Generators-generators:", cases, '/', total_cases, f'({cases / total_cases * 100:.2f}%)')
+                print("Second_level_Generators-generators:", cases, '/', total_cases,
+                      f'({cases / total_cases * 100:.2f}%)')
                 # Generate filename and save grid
-                filename = generate_grid_filename(cases, 'double', ('generator', 'generator'), [{'type': 'generator', 'id': idx}, {'type': 'generator', 'id': idx2}])
+                filename = generate_grid_filename(cases, 'double', ('generator', 'generator'),
+                                                  [{'type': 'generator', 'id': idx}, {'type': 'generator', 'id': idx2}])
                 grid_path = save_grid_to_temp_folder(grid, filename)
-                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf)
+                error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(grid_path, d_grid,
+                                                                                                   d_raw_data, d_op,
+                                                                                                   d_sg, d_vsc, d_pf)
 
                 result = {
                     'errors': error,
@@ -870,7 +931,6 @@ if __name__ == "__main__":
     check(grid)
     print('Generators done')
 
-    # TODO: Canviar al fitxer de Nord4
     futures = compss_wait_on(futures)
     path_json = results_parallel.json
     if NORD4:
