@@ -37,7 +37,7 @@ module load python/3.10.2 COMPSs
 #module load python/3.10.2 COMPSs/TrunkEI
 
 #export PYTHONPATH=${PYTHONPATH}:$(pwd)/src:$(pwd):$(pwd)/stability_analysis
-export PYTHONPATH=/gpfs/projects/bsc19/upc848455/packages:$(pwd)/src:$(pwd):$(pwd)/stability_analysis
+export PYTHONPATH=$(pwd)/../packages:$(pwd)/src:$(pwd):$(pwd)/stability_analysis
 
 set -xe 
 echo "PYTHONPATH=${PYTHONPATH}"
@@ -54,7 +54,7 @@ if [ "$MODE" = "debug" ]; then
       --qos=debug \
       --exec_time=120 \
       --num_nodes=$NUM_NODES \
-      /home/upc/upc848455/probabilistic_contingencies/main.py
+      $(pwd)/main.py
 else
     echo "Ejecutando en modo BSC_CS..."
     enqueue_compss \
@@ -64,7 +64,7 @@ else
       --qos=bsc_cs \
       --exec_time=2880 \
       --num_nodes=$NUM_NODES \
-      /home/upc/upc848455/probabilistic_contingencies/main.py
+      $(pwd)/main.py
 fi
 
 if false; then
@@ -79,5 +79,5 @@ if false; then
     --log_dir="$(pwd)" \
     --worker_working_dir="$(pwd)" \
     --master_working_dir="$(pwd)" \
-    /home/upc/upc848455/probabilistic_contingencies/main.py
+    $(pwd)/main.py
 fi
