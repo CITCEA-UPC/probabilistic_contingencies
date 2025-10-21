@@ -42,9 +42,12 @@ NORD4 = False
 hostname = socket.gethostname()
 if hostname != 'endor':  # Para saber si se ejecuta en local o en NORD4
     NORD4 = True
+    HOME = os.path.expanduser("~")
 
 if NORD4:
-    sys.path.append("/home/upc/upc848455/probabilistic_contingencies/stability_analysis")
+    stability_analysis_path = os.path.join(
+        HOME, "probabilistic_contingencies/stability_analysis")
+    sys.path.append(stability_analysis_path)
     print(os.path.abspath("."))
 else:
     sys.path.append("rC:\\Users\\alexu\\Desktop\\git\probabilistic_contingencies")
@@ -347,7 +350,7 @@ if __name__ == "__main__":
     Number of transformers: 9
     '''
 
-    PATH_NORD4 = '/home/upc/upc848455/probabilistic_contingencies/'
+    PATH_NORD4 = os.path.join(HOME, 'probabilistic_contingencies/')
     GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
     filename = 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
     path_data = 'stability_analysis/stability_analysis/data/'
