@@ -32,25 +32,12 @@ from stability_analysis.preprocess import read_data'''
 global DEBUG
 global LOGS
 global DEBUG_PYCOMPSS
-global NORD4
 
 DEBUG = False
 LOGS = False
 DEBUG_PYCOMPSS = True
-NORD4 = False
 
-hostname = socket.gethostname()
-if hostname != 'endor':  # Para saber si se ejecuta en local o en NORD4
-    NORD4 = True
-    HOME = os.path.expanduser("~")
 
-if NORD4:
-    stability_analysis_path = os.path.join(
-        HOME, "probabilistic_contingencies/stability_analysis")
-    sys.path.append(stability_analysis_path)
-    print(os.path.abspath("."))
-else:
-    sys.path.append("rC:\\Users\\alexu\\Desktop\\git\probabilistic_contingencies")
 # PyCOMPSs imports
 try:
     from pycompss.api.task import task
@@ -65,7 +52,6 @@ if LOGS:
     import logging
 
     logging.basicConfig(level=logging.DEBUG)
-
 
 # warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
@@ -137,7 +123,7 @@ def check(grid):
 @constraint(computing_units=20)
 @task(returns=5)
 def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
-    grid = GridCalEngine.open_file(path)
+    grid = gce.open_file(path)
 
     '''grid = kwargs["grid"]
     d_grid = kwargs["d_grid"]
@@ -256,14 +242,8 @@ def remove_existing_result_file(path='results_parallel.jsonl'):
 def create_temp_grids_folder():
     """
     Creates the temp_grids folder if it doesn't exist.
-    Takes into account if running on local machine or NORD4.
     """
-    if NORD4:
-        # On NORD4, use the full path
-        temp_grids_path = os.path.join(PATH_NORD4, 'temp_grids')
-    else:
-        # On local machine, use relative path
-        temp_grids_path = 'temp_grids'
+    temp_grids_path = os.path.join(REPO_PATH, 'temp_grids')
 
     if not os.path.exists(temp_grids_path):
         os.makedirs(temp_grids_path)
@@ -294,7 +274,6 @@ def generate_grid_filename(case_id, level, type_combo, elements):
 def save_grid_to_temp_folder(grid, filename):
     """
     Saves the grid to the temp_grids folder with the specified filename.
-    Takes into account if running on local machine or NORD4.
 
     Parameters:
     - grid: The grid object to save
@@ -303,21 +282,14 @@ def save_grid_to_temp_folder(grid, filename):
     Returns:
     - str: The full path where the grid was saved
     """
-    if NORD4:
-        # On NORD4, use the full path
-        full_path = os.path.join(PATH_NORD4, 'temp_grids', filename)
-    else:
-        # On local machine, use relative path
-        full_path = os.path.join('temp_grids', filename)
-
-    GridCalEngine.save_file(grid, full_path)
+    full_path = os.path.join(REPO_PATH, 'temp_grids', filename)
+    gce.save_file(grid, full_path)
     return full_path
 
 
 def load_grid_from_temp_folder(filename):
     """
     Loads a grid from the temp_grids folder with the specified filename.
-    Takes into account if running on local machine or NORD4.
 
     Parameters:
     - filename (str): The filename (without folder path)
@@ -325,14 +297,8 @@ def load_grid_from_temp_folder(filename):
     Returns:
     - The loaded grid object
     """
-    if NORD4:
-        # On NORD4, use the full path
-        full_path = os.path.join(PATH_NORD4, 'temp_grids', filename)
-    else:
-        # On local machine, use relative path
-        full_path = os.path.join('temp_grids', filename)
-
-    return GridCalEngine.open_file(full_path)
+    full_path = os.path.join(REPO_PATH, 'temp_grids', filename)
+    return gce.open_file(full_path)
 
 
 @task(returns=1)
@@ -349,18 +315,20 @@ if __name__ == "__main__":
     Number of generators: 54
     Number of transformers: 9
     '''
+    # Get absolute path where main.py is located regardless of local or Nord4 execution
+    global REPO_PATH
+    REPO_PATH = os.getcwd()
+    stability_analysis_path = os.path.join(REPO_PATH, "stability_analysis")
+    if not os.path.exists(stability_analysis_path):
+        raise ValueError(f"Directory {stability_analysis_path} does not exist")
+    sys.path.append(stability_analysis_path)
 
-    PATH_NORD4 = os.path.join(HOME, 'probabilistic_contingencies/')
-    GRID_FILE = 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw'
-    filename = 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_'
-    path_data = 'stability_analysis/stability_analysis/data/'
     excel_data = "IEEE_118_FULL"
     excel_lines_ratings = "IEEE_118_Lines"
 
-    if NORD4:
-        GRID_FILE = PATH_NORD4 + GRID_FILE
-        filename = PATH_NORD4 + filename
-        path_data = PATH_NORD4 + path_data
+    GRID_FILE = os.path.join(REPO_PATH, 'stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw')
+    filename = os.path.join(REPO_PATH, 'stability_analysis/stability_analysis/data/cases/IEEE118_NREL_stable_')
+    path_data = os.path.join(REPO_PATH, 'stability_analysis/stability_analysis/data/')
 
     # Open the grid and info
     grid = gce.open_file(GRID_FILE)
@@ -483,7 +451,7 @@ if __name__ == "__main__":
         print('Base case power flow does not converge')
     cases = 0
     print(stability, T_EIG)
-    sys.exit()
+    # sys.exit()
 
     print("Paso por aquí 3")
     total_cases = (
@@ -529,17 +497,14 @@ if __name__ == "__main__":
     futures.append(result)
     print("Deberia pasar por aqui")
     if DEBUG:
-
         print("abans futures")
         futures = compss_wait_on(futures)
         print(futures)
-        temp_path = "results_partial.json"
-        if NORD4:
-            temp_path = PATH_NORD4 + temp_path
+        temp_path = os.path.join(REPO_PATH, "results_partial.json")
         with open(temp_path, "w") as f:
             json.dump(futures, f, indent=2)
         print("Results saved to results_partial.json")
-        sys.exit()
+        # sys.exit()
 
     for idx, line in enumerate(grid.lines):
         line.active = False
@@ -569,17 +534,14 @@ if __name__ == "__main__":
         futures.append(result)
         print("Deberia pasar por aqui")
         if DEBUG:
-
             print("abans futures")
             futures = compss_wait_on(futures)
             print(futures)
-            temp_path = "results_temporal.json"
-            if NORD4:
-                temp_path = PATH_NORD4 + temp_path
+            temp_path = os.path.join(REPO_PATH, "results_temporal.json")
             with open(temp_path, "w") as f:
                 json.dump(futures, f, indent=2)
             print("Results saved to results_parallel.json")
-            sys.exit()
+            # sys.exit()
 
         # 1) Second-level failures on lines
         for idx2, line2 in enumerate(grid.lines):
@@ -935,9 +897,7 @@ if __name__ == "__main__":
     print('Generators done')
 
     futures = compss_wait_on(futures)
-    path_json = results_parallel.json
-    if NORD4:
-        path_json = PATH_NORD4 + path_json
+    path_json = os.path.join(REPO_PATH, "results_parallel.json")
     with open(path_json, "w") as f:
         json.dump(futures, f, indent=2)
     print("Results saved to results_parallel.jsonl")
