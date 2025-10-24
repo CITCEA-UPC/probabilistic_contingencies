@@ -54,6 +54,7 @@ if [ "$MODE" = "debug" ]; then
       --qos=debug \
       --exec_time=120 \
       --num_nodes=$NUM_NODES \
+      --tracing \
       $(pwd)/main.py
 else
     echo "Ejecutando en modo BSC_CS..."
@@ -64,6 +65,7 @@ else
       --qos=bsc_cs \
       --exec_time=2880 \
       --num_nodes=$NUM_NODES \
+      --tracing \
       $(pwd)/main.py
 fi
 
@@ -79,5 +81,6 @@ if false; then
     --log_dir="$(pwd)" \
     --worker_working_dir="$(pwd)" \
     --master_working_dir="$(pwd)" \
+    --tracing \
     $(pwd)/main.py
 fi
