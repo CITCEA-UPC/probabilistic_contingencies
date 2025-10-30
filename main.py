@@ -36,8 +36,9 @@ global NORD4
 
 DEBUG = False
 LOGS = False
-DEBUG_PYCOMPSS = True
+DEBUG_PYCOMPSS = False
 NORD4 = False
+HOME = os.path.expanduser("~")
 
 hostname = socket.gethostname()
 if hostname != 'endor':  # Para saber si se ejecuta en local o en NORD4
@@ -67,9 +68,9 @@ if LOGS:
     logging.basicConfig(level=logging.DEBUG)
 
 
-# warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
-# warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
+warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
 
 def read_excel_sheets_as_dict(file_path):
     """
@@ -137,7 +138,7 @@ def check(grid):
 @constraint(computing_units=20)
 @task(returns=5)
 def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
-    grid = GridCalEngine.open_file(path)
+    grid = gce.open_file(path)
 
     '''grid = kwargs["grid"]
     d_grid = kwargs["d_grid"]
@@ -310,7 +311,7 @@ def save_grid_to_temp_folder(grid, filename):
         # On local machine, use relative path
         full_path = os.path.join('temp_grids', filename)
 
-    GridCalEngine.save_file(grid, full_path)
+    gce.save_file(grid, full_path)
     return full_path
 
 
@@ -332,7 +333,7 @@ def load_grid_from_temp_folder(filename):
         # On local machine, use relative path
         full_path = os.path.join('temp_grids', filename)
 
-    return GridCalEngine.open_file(full_path)
+    return gce.open_file(full_path)
 
 
 @task(returns=1)
@@ -468,7 +469,7 @@ if __name__ == "__main__":
                                           pf_init=False,
                                           Sbus_pf=pf_results.Sbus,
                                           voltage_pf=pf_results.voltage,
-                                          plot_error=True)
+                                          plot_error=False)
 
     # Remove old file if it exists
 
@@ -483,7 +484,7 @@ if __name__ == "__main__":
         print('Base case power flow does not converge')
     cases = 0
     print(stability, T_EIG)
-    sys.exit()
+    #sys.exit()
 
     print("Paso por aquí 3")
     total_cases = (
