@@ -35,7 +35,9 @@ global DEBUG_PYCOMPSS
 
 DEBUG = False
 LOGS = False
-DEBUG_PYCOMPSS = True
+DEBUG_PYCOMPSS = False
+NORD4 = False
+HOME = os.path.expanduser("~")
 
 
 # PyCOMPSs imports
@@ -53,9 +55,10 @@ if LOGS:
 
     logging.basicConfig(level=logging.DEBUG)
 
-# warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
 
-# warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*connect\\(\\) is deprecated; use interconnect\\(\\).*")
+
+warnings.filterwarnings("ignore", category=FutureWarning, message=r".*Series\.__getitem__ treating keys as positions is deprecated.*")
 
 def read_excel_sheets_as_dict(file_path):
     """
@@ -282,7 +285,13 @@ def save_grid_to_temp_folder(grid, filename):
     Returns:
     - str: The full path where the grid was saved
     """
-    full_path = os.path.join(REPO_PATH, 'temp_grids', filename)
+    if NORD4:
+        # On NORD4, use the full path
+        full_path = os.path.join(PATH_NORD4, 'temp_grids', filename)
+    else:
+        # On local machine, use relative path
+        full_path = os.path.join('temp_grids', filename)
+
     gce.save_file(grid, full_path)
     return full_path
 
@@ -297,7 +306,13 @@ def load_grid_from_temp_folder(filename):
     Returns:
     - The loaded grid object
     """
-    full_path = os.path.join(REPO_PATH, 'temp_grids', filename)
+    if NORD4:
+        # On NORD4, use the full path
+        full_path = os.path.join(PATH_NORD4, 'temp_grids', filename)
+    else:
+        # On local machine, use relative path
+        full_path = os.path.join('temp_grids', filename)
+
     return gce.open_file(full_path)
 
 
@@ -436,7 +451,7 @@ if __name__ == "__main__":
                                           pf_init=False,
                                           Sbus_pf=pf_results.Sbus,
                                           voltage_pf=pf_results.voltage,
-                                          plot_error=True)
+                                          plot_error=False)
 
     # Remove old file if it exists
 
@@ -451,7 +466,7 @@ if __name__ == "__main__":
         print('Base case power flow does not converge')
     cases = 0
     print(stability, T_EIG)
-    # sys.exit()
+    #sys.exit()
 
     print("Paso por aquí 3")
     total_cases = (
