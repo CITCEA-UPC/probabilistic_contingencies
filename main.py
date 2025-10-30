@@ -120,7 +120,7 @@ def check(grid):
 
 # def check_stability_and_pf(**kwargs):
 
-@constraint(computing_units=20)
+@constraint(computing_units=4)
 @task(returns=5)
 def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
     grid = gce.open_file(path)
