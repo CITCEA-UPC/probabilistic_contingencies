@@ -33,7 +33,7 @@ echo "Modo: $MODE"
 echo "Número de nodos: $NUM_NODES"
 echo "================================"
 
-module load python/3.10.2 COMPSs
+module load python/3.10.2 COMPSs/3.3.3
 #module load python/3.10.2 COMPSs/TrunkEI
 
 #export PYTHONPATH=${PYTHONPATH}:$(pwd)/src:$(pwd):$(pwd)/stability_analysis
