@@ -12,6 +12,9 @@ import pickle
 import sys
 import os
 import socket
+import psutil
+from memory_profiler import memory_usage
+from pympler import asizeof
 # from GridCalEngine.Simulations.PowerFlow.power_flow_options import ReactivePowerControlMode, SolverType
 from GridCalEngine.Simulations.PowerFlow.power_flow_options import SolverType
 
@@ -123,7 +126,10 @@ def check(grid):
 @constraint(computing_units=4)
 @task(returns=5)
 def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
+    print("## Starting stability check...", flush=True)
     grid = gce.open_file(path)
+    print("...grid size:", flush=True)
+    print(asizeof.asizeof(grid) / 1024**2, "MB")
 
     '''grid = kwargs["grid"]
     d_grid = kwargs["d_grid"]
@@ -137,12 +143,16 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
     stability = None
     error = False
 
+    mem = psutil.virtual_memory()
+    print("Available:", mem.available / 1024**3, "GB")
+    print("Total:", mem.total / 1024**3, "GB")
+
     try:
         pf_results = gce.power_flow(grid)
         pf_converged = bool(pf_results.converged)
     except Exception as e:
 
-        print(f"Error during powerflow and run powerflow check: {e}")
+        print(f"Error during powerflow and run powerflow check: {e}", flush=True)
         # gce.save_file(grid, "exemple.gridcal")
         # sys.exit()
         error = str(e)
@@ -201,7 +211,10 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
         ss_sys = build_ss.connect(l_blocks, l_states, inputs, outputs, connect_fun, True)
 
         # %% SMALL-SIGNAL ANALYSIS
-
+        print(f"Memory usage before eigenvalue calculations: {memory_usage()[0]:.2f} MB", flush=True)
+        mem = psutil.virtual_memory()
+        print("Available:", mem.available / 1024**3, "GB")
+        print("Total:", mem.total / 1024**3, "GB")
         T_EIG = small_signal.FEIG(ss_sys, False)
 
         # write to excel
@@ -220,8 +233,9 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
 
     except Exception as e:
         error = str(e)
-        print(f"Error during stability check: {e}")
+        print(f"Error during stability check: {e}", flush=True)
 
+    print("## Finished stability check", flush=True)
     return error, stability, pf_converged, run_pf_converged, detect_islands(grid)
 
 
@@ -303,7 +317,7 @@ def load_grid_from_temp_folder(filename):
 
 @task(returns=1)
 def dummy(i):
-    print("################ ", i + 1)
+    print("################ ", i + 1, flush=True)
     return i + 1
 
 
@@ -479,6 +493,10 @@ if __name__ == "__main__":
     # Save grid for base case
     base_filename = "base_case.gridcal"
     base_path = save_grid_to_temp_folder(grid, base_filename)
+    mem = psutil.virtual_memory()
+    print("## Memory available before task execution:")
+    print("Available:", mem.available / 1024**3, "GB")
+    print("Total:", mem.total / 1024**3, "GB")
     error, stability, pf_converged, run_pf_converged, islands = check_stability_and_pf(base_path, d_grid, d_raw_data,
                                                                                        d_op, d_sg, d_vsc, d_pf)
     result = {
