@@ -52,6 +52,7 @@ if [ "$MODE" = "debug" ]; then
       --lang=python \
       --project_name=bsc19 \
       --qos=debug \
+      --worker_in_master_cpus=40 \
       --exec_time=120 \
       --num_nodes=$NUM_NODES \
       --tracing \
@@ -63,6 +64,7 @@ else
       --lang=python \
       --project_name=bsc19 \
       --qos=bsc_cs \
+      --worker_in_master_cpus=40 \
       --exec_time=2880 \
       --num_nodes=$NUM_NODES \
       --tracing \
