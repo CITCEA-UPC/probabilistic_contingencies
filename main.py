@@ -35,7 +35,7 @@ global DEBUG_PYCOMPSS
 
 DEBUG = False
 LOGS = False
-DEBUG_PYCOMPSS = True
+DEBUG_PYCOMPSS = False
 
 
 # PyCOMPSs imports
