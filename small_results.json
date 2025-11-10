@@ -1,0 +1,256 @@
+[
+  {
+    "errors": false,
+    "case_id": 0,
+    "level": "single",
+    "type_combo": "line",
+    "elements": [
+      {
+        "type": "line",
+        "id": 1
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": "float division by zero",
+    "case_id": 3,
+    "level": "double",
+    "type_combo": [
+      "line",
+      "line"
+    ],
+    "elements": [
+      {
+        "type": "line",
+        "id": 0
+      },
+      {
+        "type": "line",
+        "id": 2
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": null,
+    "islands": true
+  },
+   {
+    "errors": false,
+    "case_id": 9985,
+    "level": "double",
+    "type_combo": [
+      "line",
+      "transformer"
+    ],
+    "elements": [
+      {
+        "type": "line",
+        "id": 41
+      },
+      {
+        "type": "transformer",
+        "id": 10
+      }
+    ],
+    "gce.powerflow_converged": false,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": true
+  },{
+    "errors": false,
+    "case_id": 9986,
+    "level": "double",
+    "type_combo": [
+      "line",
+      "generator"
+    ],
+    "elements": [
+      {
+        "type": "line",
+        "id": 41
+      },
+      {
+        "type": "generator",
+        "id": 0
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 45172,
+    "level": "single",
+    "type_combo": "generator",
+    "elements": [
+      {
+        "type": "generator",
+        "id": 3
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 45173,
+    "level": "double",
+    "type_combo": [
+      "generator",
+      "line"
+    ],
+    "elements": [
+      {
+        "type": "generator",
+        "id": 3
+      },
+      {
+        "type": "line",
+        "id": 0
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 46359,
+    "level": "double",
+    "type_combo": [
+      "generator",
+      "generator"
+    ],
+    "elements": [
+      {
+        "type": "generator",
+        "id": 7
+      },
+      {
+        "type": "generator",
+        "id": 45
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 56112,
+    "level": "double",
+    "type_combo": [
+      "generator",
+      "transformer"
+    ],
+    "elements": [
+      {
+        "type": "generator",
+        "id": 48
+      },
+      {
+        "type": "transformer",
+        "id": 9
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": true
+  },
+  {
+    "errors": false,
+    "case_id": 42782,
+    "level": "single",
+    "type_combo": "transformer",
+    "elements": [
+      {
+        "type": "transformer",
+        "id": 4
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 42545,
+    "level": "double",
+    "type_combo": [
+      "transformer",
+      "transformer"
+    ],
+    "elements": [
+      {
+        "type": "transformer",
+        "id": 3
+      },
+      {
+        "type": "transformer",
+        "id": 1
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 42768,
+    "level": "double",
+    "type_combo": [
+      "transformer",
+      "generator"
+    ],
+    "elements": [
+      {
+        "type": "transformer",
+        "id": 3
+      },
+      {
+        "type": "generator",
+        "id": 39
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  },
+  {
+    "errors": false,
+    "case_id": 42945,
+    "level": "double",
+    "type_combo": [
+      "transformer",
+      "line"
+    ],
+    "elements": [
+      {
+        "type": "transformer",
+        "id": 4
+      },
+      {
+        "type": "line",
+        "id": 152
+      }
+    ],
+    "gce.powerflow_converged": true,
+    "gce.run_powerflow_converged": true,
+    "stability": 1,
+    "islands": false
+  }
+]

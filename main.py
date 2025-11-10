@@ -221,9 +221,9 @@ def check_stability_and_pf(path, d_grid, d_raw_data, d_op, d_sg, d_vsc, d_pf):
         # T_EIG.to_excel(path.join(path_results, "EIG_" + excel + ".xlsx"))
 
         if max(T_EIG['real'] >= 0):
-            stability = 0
+            stability = 0 #inestable
         else:
-            stability = 1
+            stability = 1 #estable
 
         # Obtain all participation factors
         # df_PF = small_signal.FMODAL(ss_sys, plot=False)
