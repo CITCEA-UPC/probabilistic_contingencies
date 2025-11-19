@@ -12,9 +12,9 @@ from collections import defaultdict
 
 # Default failure rates (lambda) per element type [failures/year]
 DEFAULT_RELIABILITY = {
-    'line': {'lambda': 1/20},  # MTTF = 20 years
-    'transformer': {'lambda': 1/50},  # MTTF = 50 years
-    'generator': {'lambda': 1/10}  # MTTF = 10 years
+    'line': {'lambda': 1 / 20},  # MTTF = 20 years
+    'transformer': {'lambda': 1 / 50},  # MTTF = 50 years
+    'generator': {'lambda': 1 / 10}  # MTTF = 10 years
 }
 
 # (Optional) Specific exceptions for individual components
@@ -257,6 +257,12 @@ if __name__ == "__main__":
 
     print("Calculating Risk Index ($R_e$)...")
 
+    # === AFEGIT: Inicialització dels comptadors ===
+    total_cases = len(results)
+    successful_cases = 0  # Casos estables (Risk=0, no is_unstable)
+    failed_cases = 0  # Casos inestables (Risk > 0, is_unstable)
+    # =============================================
+
     # --- PROCESS RESULTS ---
     for case in results:
 
@@ -267,6 +273,13 @@ if __name__ == "__main__":
                 case.get('stability') == 0 or
                 case.get('islands') is True
         )
+
+        # === AFEGIT: Actualització dels comptadors ===
+        if is_unstable:
+            failed_cases += 1
+        else:
+            successful_cases += 1
+        # =============================================
 
         # If stable (S=0), skip (Risk = 0)
         if not is_unstable: continue
@@ -313,5 +326,12 @@ if __name__ == "__main__":
     # 2. Combined Global Plot (Top 20)
     print("Generating global combined plot (Top 20)...")
     plot_combined_risk(risk_maps, top_n=20)
+
+    # === AFEGIT: Resum del resultat de l'anàlisi ===
+    print("\n--- ANÀLISI DE CASOS DE FALLIDA ---")
+    print(f"Casos totals analitzats: {total_cases}")
+    print(f"Casos ESTABLES (Risk = 0, 'Bé'): {successful_cases}")
+    print(f"Casos INESTABLES (Risk > 0, 'No Bé'): {failed_cases}")
+    # ===============================================
 
     print("\nProcessing complete. High-quality .png files created.")
