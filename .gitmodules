@@ -1,1 +1,4 @@
 
+[submodule "VeraGrid"]
+	path = VeraGrid
+	url = https://github.com/eRoots-Analytics/VeraGrid
