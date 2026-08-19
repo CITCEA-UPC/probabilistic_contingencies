@@ -2,3 +2,6 @@
 [submodule "VeraGrid"]
 	path = VeraGrid
 	url = https://github.com/eRoots-Analytics/VeraGrid
+[submodule "stability_analysis"]
+	url = https://github.com/iraola/stability_analysis
+	path = stability_analysis
