@@ -1,0 +1,468 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[catalan]{babel}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{mathtools}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=2.5cm}
+
+\title{Formulació Teòrica: Índex de Risc Probabilístic per a Anàlisi de Contingències}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Identificació del Problema Conceptual}
+
+\subsection{Error Dimensional a la Fórmula Original}
+
+La fórmula original del paper defineix la freqüència N-2 com:
+
+\begin{equation}
+F_{i,j} = \lambda_i \cdot \lambda_j
+\end{equation}
+
+\textbf{Problema:} Si $\lambda_i$ té unitats de [falles/any], llavors:
+
+\begin{equation}
+[\lambda_i \cdot \lambda_j] = \frac{1}{\text{any}} \cdot \frac{1}{\text{any}} = \frac{1}{\text{any}^2}
+\end{equation}
+
+Això \textbf{NO és una freqüència} (que hauria de ser [1/any]), sinó una taxa al quadrat. L'índex de risc resultant $R_i$ té unitats incorrectes i no és interpretable físicament.
+
+\subsection{Interpretació Incorrecta de la Probabilitat Conjunta}
+
+El producte $\lambda_i \cdot \lambda_j$ representa la probabilitat que \textbf{ambdós components fallin en un període d'un any} (assumint independència), no la freqüència de fallada simultània.
+
+Per a una doble contingència real, necessitem que el segon component falli \textbf{mentre el primer està fora de servei}, la qual cosa depèn del temps de reparació.
+
+\section{Nova Formulació Proposada}
+
+\subsection{Canvi d'Enfocament: Vulnerabilitat Estructural vs.\ Probabilitat Temporal}
+
+\textbf{Reflexió clau:} El que estem fent NO és modelar la probabilitat que els components fallin en el temps. Estem \textbf{forçant la fallada} de cada component (i combinacions) i avaluant si la xarxa té problemes.
+
+La pregunta real és:
+\begin{itemize}
+    \item \textbf{N-1:} Si falla l'element $i$ sol $\rightarrow$ la xarxa té problemes?
+    \item \textbf{N-2:} Si a més falla l'element $j$ $\rightarrow$ empitjora la situació?
+\end{itemize}
+
+Això és una \textbf{avaluació de vulnerabilitat estructural}, no una predicció probabilística temporal.
+
+\subsection{Nou Enfocament: Vulnerabilitat Ponderada per Probabilitat}
+
+En lloc de calcular la probabilitat conjunta de fallada (que requereix MTTR), proposem:
+
+\begin{quote}
+\textbf{Donat que l'element $i$ ha fallat, quin és el risc addicional si un altre element també falla?}
+\end{quote}
+
+\subsection{Definicions}
+
+\textbf{Severitat binària:}
+
+\begin{equation}
+S_c = \begin{cases} 
+1 & \text{si la contingència } c \text{ causa fallada del sistema} \\ 
+0 & \text{altrament} 
+\end{cases}
+\end{equation}
+
+On ``fallada del sistema'' es defineix com qualsevol de:
+\begin{itemize}
+    \item No convergència del flux de potència òptim (OPF)
+    \item Inestabilitat de petit senyal (almenys un autovalor amb part real $\geq 0$)
+    \item Formació d'illes elèctriques
+\end{itemize}
+
+\textbf{Probabilitat anual de fallada:}
+
+Per a un component $j$ amb taxa de fallada $\lambda_j$ [falles/any], la probabilitat que falli en un any és:
+
+\begin{equation}
+P_j = 1 - e^{-\lambda_j} \approx \lambda_j \quad \text{(per } \lambda_j \ll 1\text{)}
+\end{equation}
+
+Aquesta és una \textbf{probabilitat adimensional} que utilitzem com a pes relatiu.
+
+\subsection{Índex de Risc de Vulnerabilitat}
+
+Definim el \textbf{risc de vulnerabilitat} de l'element $i$ com la suma de dos components independents:
+
+\begin{equation}
+\boxed{R_i = R_i^{(1)} + R_i^{(2)}}
+\end{equation}
+
+on:
+
+\subsubsection*{Risc N-1 (vulnerabilitat individual)}
+
+\begin{equation}
+\boxed{R_i^{(1)} = S_i}
+\end{equation}
+
+Mesura si l'element $i$ és crític per si sol. Val 1 si la fallada de $i$ causa fallada del sistema, 0 altrament.
+
+\subsubsection*{Risc N-2 (vulnerabilitat per combinacions)}
+
+\begin{equation}
+\boxed{R_i^{(2)} = \sum_{j \neq i} P_j \cdot S_{i,j}}
+\end{equation}
+
+Mesura quantes combinacions amb altres elements causen fallada, ponderat per la probabilitat que aquests altres elements fallin. Si $i$ combinat amb un element $j$ molt propens a fallar ($P_j$ alt) causa fallada, és més preocupant que si ho fa amb un element molt fiable ($P_j$ baix).
+
+\subsubsection*{Segon element més crític}
+
+Per a un element $i$ donat, identifiquem quin és l'element $j$ més perillós quan es combina amb $i$:
+
+\begin{equation}
+\boxed{j^*_i = \arg\max_{j \neq i} \{ P_j \cdot S_{i,j} \}}
+\end{equation}
+
+Això respon a la pregunta: ``Si ja ha fallat $i$, quin és el segon element que seria més perillós que també fallés?''
+
+\subsubsection*{Per què descompondre?}
+
+La descomposició permet respondre preguntes operatives concretes:
+
+\begin{table}[htbp]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{7cm} p{7cm}}
+\toprule
+\textbf{Pregunta} & \textbf{Resposta} \\
+\midrule
+Quin element és més perillós en N-1? & $\arg\max_i R_i^{(1)}$ (o tots els que tinguin $R_i^{(1)} = 1$) \\
+Quin element és més perillós en N-2? & $\arg\max_i R_i^{(2)}$ \\
+Si falla $i$, quin $j$ és més crític? & $j^*_i = \arg\max_{j \neq i} P_j \cdot S_{i,j}$ \\
+Quin element té el risc global més alt? & $\arg\max_i (R_i^{(1)} + R_i^{(2)})$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tractament de Contingències N-2 Ordenades}
+
+Al codi, les contingències N-2 es generen de forma \textbf{ordenada}: es simulen tant $(i,j)$ com $(j,i)$ com a casos separats.
+
+\subsubsection*{Enfocament: Comptar per separat}
+
+Cada contingència ordenada contribueix independentment al risc:
+
+\begin{equation}
+R_i = S_i + \sum_{j \neq i} P_j \cdot S_{(i,j)} + \sum_{j \neq i} P_j \cdot S_{(j,i)}
+\end{equation}
+
+On:
+\begin{itemize}
+    \item $S_{(i,j)}$: severitat quan $i$ falla primer, després $j$
+    \item $S_{(j,i)}$: severitat quan $j$ falla primer, després $i$
+\end{itemize}
+
+\subsubsection*{Simplificació}
+
+Si assumim que l'ordre no afecta la severitat (o volem el cas més conservador):
+
+\begin{equation}
+R_i = S_i + \sum_{j \neq i} P_j \cdot \max(S_{(i,j)}, S_{(j,i)})
+\end{equation}
+
+\textbf{Nota:} Amb severitat binària, $\max(S_{(i,j)}, S_{(j,i)}) = S_{(i,j)} \lor S_{(j,i)}$ (OR lògic).
+
+\subsection{Índexs de Risc Normalitzats [0,1]}
+
+Per obtenir índexs entre 0 i 1, normalitzem cada component pel seu màxim global:
+
+\begin{equation}
+\boxed{RI_i^{(1)} = \frac{R_i^{(1)}}{\max_{k \in \mathcal{E}} R_k^{(1)}}} \quad \text{(Risc N-1 normalitzat)}
+\end{equation}
+
+\begin{equation}
+\boxed{RI_i^{(2)} = \frac{R_i^{(2)}}{\max_{k \in \mathcal{E}} R_k^{(2)}}} \quad \text{(Risc N-2 normalitzat)}
+\end{equation}
+
+\begin{equation}
+\boxed{RI_i = \frac{R_i}{\max_{k \in \mathcal{E}} R_k}} \quad \text{(Risc total normalitzat)}
+\end{equation}
+
+\textbf{On:}
+\begin{itemize}
+    \item $RI_i^{(1)}, RI_i^{(2)}, RI_i \in [0, 1]$: Índexs de risc normalitzats
+    \item $\mathcal{E}$: Conjunt de tots els elements de la xarxa (línies, transformadors, generadors)
+\end{itemize}
+
+\textbf{Interpretació:}
+\begin{itemize}
+    \item $RI_i^{(1)} = 1$: L'element més crític en fallada individual
+    \item $RI_i^{(2)} = 1$: L'element més crític en combinacions N-2
+    \item $RI_i = 1$: L'element amb el risc global més alt
+    \item Valors propers a 0 indiquen baixa vulnerabilitat en la categoria corresponent
+\end{itemize}
+
+\textbf{Nota:} Com que $R_i^{(1)} \in \{0, 1\}$, el màxim $\max_k R_k^{(1)}$ també és 1 (si hi ha almenys un element crític). Per tant, $RI_i^{(1)} = R_i^{(1)}$.
+
+\section{Pla de Treball per a la Reformulació del Paper}
+
+\subsection{Canvis a la Secció de Metodologia}
+
+\begin{enumerate}
+    \item \textbf{Canviar l'enfocament de ``freqüència de fallada'' a ``vulnerabilitat estructural''}
+    \begin{itemize}
+        \item Explicar que estem forçant les fallades i avaluant la resposta del sistema
+        \item No estem modelant la probabilitat temporal de fallada
+    \end{itemize}
+    
+    \item \textbf{Reformular l'equació del risc amb descomposició}
+    \begin{itemize}
+        \item Presentar $R_i = R_i^{(1)} + R_i^{(2)}$ amb les dues components
+        \item Explicar que $P_j$ és un pes relatiu basat en fiabilitat
+        \item Introduir $j^*_i$ per identificar el segon element més crític
+    \end{itemize}
+    
+    \item \textbf{Afegir secció sobre normalització}
+    \begin{itemize}
+        \item Explicar la normalització pel màxim global per a cada component
+        \item Justificar per què és útil per a comparació i visualització
+    \end{itemize}
+    
+    \item \textbf{Clarificar el tractament de contingències N-2}
+    \begin{itemize}
+        \item Explicar que es simulen ambdós ordres $(i,j)$ i $(j,i)$
+        \item Justificar el comptatge per separat o l'ús del màxim
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Canvis a la Secció de Resultats}
+
+\begin{enumerate}
+    \item \textbf{Recalcular els índexs de risc}
+    \begin{itemize}
+        \item Aplicar la nova fórmula als resultats existents
+        \item Calcular $R_i^{(1)}$, $R_i^{(2)}$ i $R_i$ per separat
+        \item Identificar $j^*_i$ per als elements més crítics
+        \item Normalitzar pel màxim global
+    \end{itemize}
+    
+    \item \textbf{Actualitzar les figures}
+    \begin{itemize}
+        \item Gràfics separats per $RI^{(1)}$ (risc N-1) i $RI^{(2)}$ (risc N-2)
+        \item Gràfic combinat amb $RI$ total (barres apilades N-1 + N-2)
+        \item Taula amb $j^*_i$ per als top-N elements més crítics
+    \end{itemize}
+    
+    \item \textbf{Reinterpretar els resultats}
+    \begin{itemize}
+        \item Respondre explícitament les tres preguntes operatives:
+        \begin{itemize}
+            \item Quin element és més perillós en N-1?
+            \item Quin element és més perillós en N-2?
+            \item Si falla un element N-1, quin és el segon més crític?
+        \end{itemize}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Canvis a la Discussió}
+
+\begin{enumerate}
+    \item \textbf{Eliminar referències a ``failure-events/year''}
+    \begin{itemize}
+        \item Substituir per ``vulnerabilitat relativa normalitzada''
+    \end{itemize}
+    
+    \item \textbf{Mantenir la discussió sobre concentració de risc}
+    \begin{itemize}
+        \item La distribució asimètrica del risc es manté
+        \item La identificació d'elements crítics és la mateixa
+    \end{itemize}
+    
+    \item \textbf{Afegir avantatges de la nova formulació}
+    \begin{itemize}
+        \item No necessita MTTR
+        \item Descomposició N-1/N-2 per a anàlisi detallada
+        \item Identificació del segon element més crític
+        \item Més fàcil d'interpretar (0--100\% del màxim)
+        \item Reflecteix vulnerabilitat estructural, no predicció temporal
+    \end{itemize}
+\end{enumerate}
+
+\section{Exemple Numèric}
+
+\subsection{Dades}
+
+Considerem una línia $i$ amb els següents resultats de simulació:
+\begin{itemize}
+    \item Contingència N-1: $S_i = 1$ (causa fallada)
+    \item Contingències N-2 amb 3 altres elements:
+    \begin{itemize}
+        \item $j_1$ (línia): $\lambda_{j_1} = 0.05$, $S_{i,j_1} = 1$
+        \item $j_2$ (generador): $\lambda_{j_2} = 0.10$, $S_{i,j_2} = 1$
+        \item $j_3$ (transformador): $\lambda_{j_3} = 0.02$, $S_{i,j_3} = 0$
+    \end{itemize}
+\end{itemize}
+
+\subsection{Càlcul dels Components del Risc}
+
+\textbf{Risc N-1:}
+\begin{equation}
+R_i^{(1)} = S_i = 1
+\end{equation}
+
+\textbf{Risc N-2:}
+\begin{equation}
+R_i^{(2)} = \sum_{j \neq i} P_j \cdot S_{i,j} = 0.05 \cdot 1 + 0.10 \cdot 1 + 0.02 \cdot 0 = 0.15
+\end{equation}
+
+\textbf{Risc total:}
+\begin{equation}
+R_i = R_i^{(1)} + R_i^{(2)} = 1 + 0.15 = 1.15
+\end{equation}
+
+\subsection{Identificació del Segon Element Més Crític}
+
+Per a la línia $i$, calculem el producte $P_j \cdot S_{i,j}$ per a cada $j$:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Element $j$} & $P_j$ & $S_{i,j}$ & $P_j \cdot S_{i,j}$ \\
+\midrule
+$j_1$ (línia) & 0.05 & 1 & 0.05 \\
+$j_2$ (generador) & 0.10 & 1 & \textbf{0.10} \\
+$j_3$ (transformador) & 0.02 & 0 & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{equation}
+j^*_i = j_2 \quad \text{(generador amb } P_{j_2} = 0.10\text{)}
+\end{equation}
+
+\textbf{Interpretació:} Si la línia $i$ ja ha fallat, el segon element més perillós que també fallés seria el generador $j_2$, perquè té la probabilitat de fallada més alta entre els que causen fallada combinada.
+
+\subsection{Normalització}
+
+Suposem que el màxim global de $R^{(2)}$ és 0.25 i el màxim de $R$ és 1.50:
+
+\begin{equation}
+RI_i^{(1)} = \frac{1}{1} = 1.0 \quad \text{(la línia } i \text{ és crítica en N-1)}
+\end{equation}
+
+\begin{equation}
+RI_i^{(2)} = \frac{0.15}{0.25} = 0.60 \quad \text{(60\% del risc N-2 màxim)}
+\end{equation}
+
+\begin{equation}
+RI_i = \frac{1.15}{1.50} = 0.767 \quad \text{(76.7\% del risc global màxim)}
+\end{equation}
+
+\subsection{Anàlisi del Resultat}
+
+\begin{itemize}
+    \item \textbf{Contribució N-1:} $1 / 1.15 = 87\%$ del risc ve de la fallada individual
+    \item \textbf{Contribució N-2:} $0.15 / 1.15 = 13\%$ del risc ve de combinacions
+    \item \textbf{Segon element més perillós:} Generador $j_2$ (perquè té $\lambda$ més alta i causa fallada)
+\end{itemize}
+
+Això indica que la línia $i$ és crítica principalment per si sola, però també empitjora significativament quan es combina amb generadors propensos a fallar.
+
+\section{Comparació amb la Fórmula Original}
+
+\begin{table}[htbp]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4cm} p{4.5cm} p{4.5cm}}
+\toprule
+\textbf{Aspecte} & \textbf{Fórmula Original} & \textbf{Nova Fórmula} \\
+\midrule
+Enfocament & Freqüència de fallada temporal & Vulnerabilitat estructural \\
+Unitats de $F_{i,j}$ & [1/any$^2$] (incorrecte) & N/A (no existeix) \\
+Pes N-2 & $\lambda_i \cdot \lambda_j$ & $P_j \approx \lambda_j$ \\
+Interpretació & Freqüència esperada (falles/any) & Vulnerabilitat relativa \\
+Descomposició N-1/N-2 & No (barrejat) & Sí ($R^{(1)}$ i $R^{(2)}$ separats) \\
+Identificació de $j^*$ & No & Sí ($\arg\max$) \\
+Rang de $R_i$ & $[0, \infty)$ & $[0, 1 + N \cdot \lambda_{\max}]$ aprox. \\
+Normalització & No & Sí, a $[0,1]$ per component \\
+Dependència de MTTR & Implícita (no declarada) & No necessària \\
+Interpretabilitat & Difícil (valors com 1.47) & Fàcil (0--100\% del màxim) \\
+Pregunta que respon & ``Amb quina freqüència fallarà?'' & ``Què passa si falla? I si a més falla un altre?'' \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Preguntes Obertes per a Discussió}
+
+\begin{enumerate}
+    \item \textbf{Valors de $\lambda_i$ per component específic:}
+    \begin{itemize}
+        \item Actualment usem valors genèrics per tipus
+        \item El framework permet assignar $\lambda_i$ individuals
+        \item Cal decidir si mantenim valors genèrics o busquem dades específiques
+    \end{itemize}
+    
+    \item \textbf{Independència de fallades:}
+    \begin{itemize}
+        \item Assumim que les fallades són independents
+        \item En realitat, pot haver-hi correlació (línies al mateix corredor, etc.)
+        \item Podríem introduir un factor de correlació si tenim dades
+    \end{itemize}
+    
+    \item \textbf{Severitat no binària:}
+    \begin{itemize}
+        \item Actualment $S_c \in \{0, 1\}$
+        \item Podríem definir $S_c \in [0, 1]$ basat en magnitud de la violació
+        \item Exemple: $S_c = \frac{\text{MW no servits}}{\text{MW totals}}$
+    \end{itemize}
+    
+    \item \textbf{Pes del terme N-1 vs N-2:}
+    \begin{itemize}
+        \item Actualment el terme N-1 té pes 1 (constant)
+        \item Podríem ponderar-lo per $\lambda_i$ si volem que elements més propensos a fallar tinguin més pes N-1
+        \item Alternativa: $R_i = \lambda_i \cdot S_i + \sum_{j \neq i} \lambda_j \cdot S_{i,j}$
+    \end{itemize}
+    
+    \item \textbf{Comptatge ordenat vs.\ màxim:}
+    \begin{itemize}
+        \item Actualment comptem $(i,j)$ i $(j,i)$ per separat
+        \item Podríem usar $\max(S_{(i,j)}, S_{(j,i)})$ per evitar doble comptatge
+        \item Això canviaria els valors absoluts però no el rànquing relatiu
+    \end{itemize}
+\end{enumerate}
+
+\section{Conclusions}
+
+La nova formulació corregeix l'error dimensional de la fórmula original i proporciona un sistema d'índexs de risc que:
+
+\begin{itemize}
+    \item \textbf{Reflecteix vulnerabilitat estructural}, no predicció temporal
+    \item \textbf{És adimensional} i normalitzat a $[0, 1]$
+    \item \textbf{És interpretable}: percentatge de la vulnerabilitat màxima
+    \item \textbf{No necessita MTTR} (evita el problema dimensional)
+    \item \textbf{Pondera per fiabilitat}: combinacions amb elements propensos a fallar tenen més pes
+    \item \textbf{Es descompon en N-1 i N-2}: permet anàlisi detallat per tipus de contingència
+    \item \textbf{Identifica el segon element més crític}: $j^*_i$ per a cada element $i$
+\end{itemize}
+
+Aquesta formulació respon a les tres preguntes operatives clau:
+
+\begin{enumerate}
+    \item \textbf{Quin element és més perillós en N-1?} $\rightarrow$ $\arg\max_i R_i^{(1)}$
+    \item \textbf{Quin element és més perillós en N-2?} $\rightarrow$ $\arg\max_i R_i^{(2)}$
+    \item \textbf{Si falla $i$, quin $j$ és més crític?} $\rightarrow$ $j^*_i = \arg\max_{j \neq i} P_j \cdot S_{i,j}$
+\end{enumerate}
+
+És més rigorosa des del punt de vista conceptual i més fàcil de comunicar a operadors i planificadors de xarxes.
+
+\end{document}
