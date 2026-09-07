@@ -15,7 +15,7 @@ if VERAGRID_SRC not in sys.path:
 import VeraGridEngine.api as vge
 
 
-if config.TEST:
+if config.TEST_1_PREPROCESS:
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
     print("Database file deleted")

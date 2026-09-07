@@ -138,13 +138,12 @@ def main():
 
     if args.contingency_id is not None:
         contingency_id = args.contingency_id
-    elif config.TEST:
+    elif config.TEST_2_PROCESS:
         contingency_id = config.TEST_CONTINGENCY_ID
     else:
-        parser.error("contingency_id is required when TEST is False")
+        parser.error("contingency_id is required when TEST_2_PROCESS is False")
 
     contingency = load_contingency_from_db(contingency_id)
-    print(contingency)
 
     result = calculate_contingency(contingency)
     print(result)
