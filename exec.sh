@@ -3,14 +3,23 @@
 # Llança el pipeline al node local amb: ./run_slurm.sh
 # El preprocess s'executa localment; només el process s'envia als nodes de càlcul.
 #SBATCH --job-name=contingencies
-#SBATCH --output=slurm-%x-%j.out
-#SBATCH --error=slurm-%x-%j.err
+#SBATCH --output=slurm-%x-%A_%a.out
+#SBATCH --error=slurm-%x-%A_%a.err
 #SBATCH --time=01:00:00
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=2G
+#SBATCH --account=bsc15
+#SBATCH --qos=gp_bsccs
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=agracia@bsc.es
 
-unset PYTHONPATH
 
+module load hdf5
 module load python/3.12.1
+
+unset PYTHONHOME
+unset PYTHONPATH
 
 set -euo pipefail
 
@@ -59,6 +68,6 @@ fi
 # El preprocess ja ha acabat localment abans d'enviar l'array a Slurm.
 echo "Submitting process array for $contingency_count contingencies"
 sbatch \
-    --array="1-${contingency_count}" \
+    --array="1-${contingency_count}%300" \
     --export="ALL,PIPELINE_STAGE=process" \
-    "$SCRIPT_DIR/run_slurm.sh"
+    "$SCRIPT_DIR/exec.sh"
