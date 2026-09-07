@@ -1,88 +1,64 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Script para ejecutar el análisis de contingencias probabilísticas
-# Uso: ./exec.sh [debug|bsc_cs] [num_nodes]
-# Ejemplos:
-#   ./exec.sh debug          # Ejecuta en modo debug con 1 nodo
-#   ./exec.sh bsc_cs         # Ejecuta en modo bsc_cs con 1 nodo
-#   ./exec.sh bsc_cs 4       # Ejecuta en modo bsc_cs con 4 nodos
+# Llança el pipeline al node local amb: ./run_slurm.sh
+# El preprocess s'executa localment; només el process s'envia als nodes de càlcul.
+#SBATCH --job-name=contingencies
+#SBATCH --output=slurm-%x-%j.out
+#SBATCH --error=slurm-%x-%j.err
+#SBATCH --time=01:00:00
+#SBATCH --cpus-per-task=1
 
-# Verificar parámetros
-if [ $# -eq 0 ]; then
-    echo "Error: Debes especificar el modo de ejecución (debug o bsc_cs)"
-    echo "Uso: $0 [debug|bsc_cs] [num_nodes]"
-    echo "Ejemplos:"
-    echo "  $0 debug          # Modo debug con 1 nodo"
-    echo "  $0 bsc_cs         # Modo bsc_cs con 1 nodo"
-    echo "  $0 bsc_cs 4       # Modo bsc_cs con 4 nodos"
+unset PYTHONPATH
+
+module load python/3.12.1
+
+set -euo pipefail
+
+# Directori del repositori i intèrpret Python del projecte.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-${SCRIPT_DIR}/.venv/bin/python}"
+
+cd "$SCRIPT_DIR"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+    echo "Python executable not found: $PYTHON_BIN" >&2
     exit 1
 fi
 
-MODE=$1
-NUM_NODES=${2:-1}  # Por defecto 1 nodo si no se especifica
+# Les tasques de l'array només processen la contingència assignada per Slurm.
+if [[ "${PIPELINE_STAGE:-preprocess}" == "process" ]]; then
+    if [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
+        echo "SLURM_ARRAY_TASK_ID is not set for the process stage." >&2
+        exit 1
+    fi
 
-# Validar modo
-if [ "$MODE" != "debug" ] && [ "$MODE" != "bsc_cs" ]; then
-    echo "Error: El modo debe ser 'debug' o 'bsc_cs'"
-    echo "Modo recibido: $MODE"
+    exec "$PYTHON_BIN" 2.process.py "$SLURM_ARRAY_TASK_ID"
+fi
+
+# El job principal genera totes les contingències abans de crear l'array.
+echo "Running preprocess"
+"$PYTHON_BIN" 1.preprocess.py
+
+# Consulta quantes files ha creat el preprocess per definir el rang de l'array.
+contingency_count=$("$PYTHON_BIN" -c '
+import sqlite3
+import config
+
+with sqlite3.connect(config.DB_FILE) as connection:
+    print(connection.execute(
+        "SELECT COUNT(*) FROM contingency_results"
+    ).fetchone()[0])
+')
+
+# No enviïs un array buit si el preprocess no ha generat cap contingència.
+if [[ "$contingency_count" -lt 1 ]]; then
+    echo "No contingencies were generated." >&2
     exit 1
 fi
 
-echo "=== Configuración de ejecución ==="
-echo "Modo: $MODE"
-echo "Número de nodos: $NUM_NODES"
-echo "================================"
-
-module load python/3.10.2 COMPSs/3.3.3
-#module load python/3.10.2 COMPSs/TrunkEI
-
-#export PYTHONPATH=${PYTHONPATH}:$(pwd)/src:$(pwd):$(pwd)/stability_analysis
-export PYTHONPATH=$(pwd)/../packages:$(pwd)/src:$(pwd):$(pwd)/stability_analysis
-
-set -xe 
-echo "PYTHONPATH=${PYTHONPATH}"
-which python
-python --version
-
-# Configurar parámetros según el modo
-if [ "$MODE" = "debug" ]; then
-    echo "Ejecutando en modo DEBUG..."
-    enqueue_compss \
-      --pythonpath="${PYTHONPATH}" \
-      --lang=python \
-      --project_name=bsc19 \
-      --qos=debug \
-      --worker_in_master_cpus=40 \
-      --exec_time=120 \
-      --num_nodes=$NUM_NODES \
-      --tracing \
-      $(pwd)/main.py
-else
-    echo "Ejecutando en modo BSC_CS..."
-    enqueue_compss \
-      --pythonpath="${PYTHONPATH}" \
-      --lang=python \
-      --project_name=bsc19 \
-      --qos=bsc_cs \
-      --worker_in_master_cpus=40 \
-      --exec_time=2880 \
-      --num_nodes=$NUM_NODES \
-      --tracing \
-      $(pwd)/main.py
-fi
-
-if false; then
-  enqueue_compss \
-    --pythonpath="${PYTHONPATH}" \
-    --lang=python \
-    --project_name=bsc19 \
-    --qos=bsc_cs \
-    --num_nodes=1 \
-    --debug \
-    --job_execution_dir="$(pwd)" \
-    --log_dir="$(pwd)" \
-    --worker_working_dir="$(pwd)" \
-    --master_working_dir="$(pwd)" \
-    --tracing \
-    $(pwd)/main.py
-fi
+# El preprocess ja ha acabat localment abans d'enviar l'array a Slurm.
+echo "Submitting process array for $contingency_count contingencies"
+sbatch \
+    --array="1-${contingency_count}" \
+    --export="ALL,PIPELINE_STAGE=process" \
+    "$SCRIPT_DIR/run_slurm.sh"

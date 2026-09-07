@@ -2,9 +2,9 @@
 This folder contains all the necessary material to follow a tutorial to learn how to use COMPSs Agents. For doing so, this tutorial deploys two agents on the local node and submits invocations its REST API.
 
 ## Applications
-For that we will use one simple Java application. `DemoApp` is a simple application demonstrating how a COMPSs application has to be edited to enable its execution with agents. In the original application, the mai method obtains from the command line arguments the an integer that indicates the number of invocations that will be done to a method (`addDelay`) adding a 1-second delay and prints its starting and ending timestamps. For doing that, the `main` method parses the command-line argument and invokes the `method` method which iteratively calls the function as many times as indicated.
+For that we will use one simple Java application. `DemoApp` is a simple application demonstrating how a COMPSs application has to be edited to enable its execution with agents. In the original application, the mai method obtains from the command line arguments the an integer that indicates the number of invocations that will be done to a method (`addDelay`) adding a 1-second delay and prints its starting and ending timestamps. For doing that, the `main_pycompss.py` method parses the command-line argument and invokes the `method` method which iteratively calls the function as many times as indicated.
 
-The `DemoApp` includes an additional method (`demoFunction`) that is not part of the execution flow of the `main`. This function does exactly the same as the main method; its solely purpose is to demonstate that Agents invocations can start with any other function than the main.
+The `DemoApp` includes an additional method (`demoFunction`) that is not part of the execution flow of the `main_pycompss.py`. This function does exactly the same as the main method; its solely purpose is to demonstate that Agents invocations can start with any other function than the main.
 
 Finally, the application contains the `DemoClassItf` interface has all the necessary information for replacing all the invocations to the `addDelay`method by an asynchronous task.
 
@@ -43,7 +43,7 @@ As explained, the `/tmp/Agent1` folder contains all the logs of the deployed age
 ### 2. Submitting a request to execute a function to an isolated agent
 The Agent API offers an endpoint where to submit requests to execute applications; however, to simplify the invocation, the COMPSs framework provides the `compss_agents_call_operation` script.  
 
-The following command requests an execution of `main` method of the `DemoClass` class with a parameter value 5.
+The following command requests an execution of `main_pycompss.py` method of the `DemoClass` class with a parameter value 5.
 ```
 compss_agent_call_operation \
    --master_node=127.0.0.1 \
@@ -51,7 +51,7 @@ compss_agent_call_operation \
    es.bsc.compss.test.DemoClass 5
 ```
 Once the Agent receives this invocation, it should print the following message `Received REST call to run a JAVA method` in the standard output of the Agent. After a 5 seconds (plus some overhead due to the starting all the internal agent), it will appear a message indicating how long it took for the request to run.
-Since the method has been invoked as a task, it has been executed as a job (job1). Therefore, we will have a `job1_NEW.out` and a `job1_NEW.err` files in the `/tmp/Agent1/jobs` folder. There we can check that the output of the job corresponds to what should be printed by an execution of the `main` method of the `DemoApp` class.
+Since the method has been invoked as a task, it has been executed as a job (job1). Therefore, we will have a `job1_NEW.out` and a `job1_NEW.err` files in the `/tmp/Agent1/jobs` folder. There we can check that the output of the job corresponds to what should be printed by an execution of the `main_pycompss.py` method of the `DemoApp` class.
 
 
 One of the key features of COMPSs Agents is the resource management to ensure resource exclusivity. To verify that, the previous execution request can be submitted three times in a row. The default configuration of an agent sets up a single CPU core; therefore, only one task can run at a time. The three submitted requests will enqueue and be executed subsequently. Right after the submission, the Agent output log should contain three times the acknowledge of receiving the request. After the submission and waiting for about 15 seconds, the output log should show some messages similar to this:
@@ -65,7 +65,7 @@ App completed after 14158
 ```
 Although the execution time for each application should be 5 seconds, the time-to-complete for the third invocation usually is less that 15 seconds (10 waiting + 5 executing). This is because the delay between request. The actual times when each task has been executed can be checked at the jobs folder, where there should be 4 jobs: the first execution and these three. Checking the output of jobs 2 to 4, it can be verified that the Agent has guaranteed the exclusivity of resources.
 
-Unlike regular COMPSs applications, Agents can start the execution of any method other than the `main`. By adding the `--method_name` option to the `compss_agent_call_operation`, the user can select the method to execute. The command below requests the execution of the `demoFunction` method.
+Unlike regular COMPSs applications, Agents can start the execution of any method other than the `main_pycompss.py`. By adding the `--method_name` option to the `compss_agent_call_operation`, the user can select the method to execute. The command below requests the execution of the `demoFunction` method.
 ```
 compss_agent_call_operation \
    --master_node=127.0.0.1 \
@@ -124,7 +124,7 @@ And the current resource configuration can be checked with the same command. Aft
 }
 ```
 
-Now that the agent can run up to 5 simultaneous tasks, it has enough resources to host all the task from the nested workflow. Submitting the same command will start the execution of the `main` method again.
+Now that the agent can run up to 5 simultaneous tasks, it has enough resources to host all the task from the nested workflow. Submitting the same command will start the execution of the `main_pycompss.py` method again.
 ```
 compss_agent_call_operation \
    --master_node=127.0.0.1 \
@@ -133,7 +133,7 @@ compss_agent_call_operation \
    es.bsc.compss.test.DemoClass 5
 ```
 
-However, the response time of the Agent this time is reduced to a bit more of a second. The timestamps printed in jobs 13 to 17 (job12 is the `main`) show that the 5 tasks have been executed in parallel allowing the whole worfklow execution time to shrink.
+However, the response time of the Agent this time is reduced to a bit more of a second. The timestamps printed in jobs 13 to 17 (job12 is the `main_pycompss.py`) show that the 5 tasks have been executed in parallel allowing the whole worfklow execution time to shrink.
 
 ```
 Received REST call to run a PYTHON method
@@ -170,12 +170,12 @@ curl -XGET http://localhost:46101/COMPSs/resources | jq
 
 ```
 
-Requesting one more time the execution of the `main` method, the behaviour will be similar, but, given that only 2 cpus are available, the execution should take a bit more than 3 seconds.
+Requesting one more time the execution of the `main_pycompss.py` method, the behaviour will be similar, but, given that only 2 cpus are available, the execution should take a bit more than 3 seconds.
 ```
 Received REST call to run a PYTHON method
 App completed after 3295
 ```
-This time, job 18 should contain the execution of the `main` method and jobs 19 to 23 correspond to `addDelay` tasks.
+This time, job 18 should contain the execution of the `main_pycompss.py` method and jobs 19 to 23 correspond to `addDelay` tasks.
 
 
 ### 5. Setting up Agents interaction
@@ -246,10 +246,10 @@ After executing the command, the resource query on Agent1 will return two resour
 }
 ```
 
-Submitting one more execution of the parallelized `main` method to the Agent1 should result in job24 for the `main` and jobs 25 to 29 should contain the `addDelay` tasks. However, looking at the jobs folder of Agent1, we should see that job25 is not there. This task has been offloaded onto Agent2 and should appear in `/tmp/Agent2/jobs` folder.
+Submitting one more execution of the parallelized `main_pycompss.py` method to the Agent1 should result in job24 for the `main_pycompss.py` and jobs 25 to 29 should contain the `addDelay` tasks. However, looking at the jobs folder of Agent1, we should see that job25 is not there. This task has been offloaded onto Agent2 and should appear in `/tmp/Agent2/jobs` folder.
 
 
-Submitting another execution of the parallelized `main` method with a higher value on the parameter it will create more tasks. The following command creates up to 20 `addDelay` tasks.
+Submitting another execution of the parallelized `main_pycompss.py` method with a higher value on the parameter it will create more tasks. The following command creates up to 20 `addDelay` tasks.
 ```
 compss_agent_call_operation \
    --master_node=127.0.0.1 \

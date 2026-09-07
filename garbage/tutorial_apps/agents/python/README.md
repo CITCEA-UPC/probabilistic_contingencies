@@ -2,11 +2,11 @@
 This folder contains all the necessary material to follow a tutorial to learn how to use COMPSs Agents. For doing so, this tutorial deploys two agents on the local node and submits invocations its REST API.
 
 ## Applications
-For that we will use two simple Python applications. The `test_app` application has one single method (`main`) which accepts no parameters and just waits for 5 seconds printing the start and finish timestamps. 
+For that we will use two simple Python applications. The `test_app` application has one single method (`main_pycompss.py`) which accepts no parameters and just waits for 5 seconds printing the start and finish timestamps. 
 
-The second application `demo_app` is a simple application demonstrating how a COMPSs application has to be edited to enable its execution with agents. The original pyCOMPSs application creates a set of tasks that add a 1-second delay. The application accepts 1 single parameter that indicates the number of tasks to be created. Each of these tasks waits for 1 second and prints its starting and ending timestamps. For doing that, the `main` method parses the command-line argument and invokes the `iterative_delay` method. This latter method invokes as many times as indicated in the argument the `add_delay` method.
+The second application `demo_app` is a simple application demonstrating how a COMPSs application has to be edited to enable its execution with agents. The original pyCOMPSs application creates a set of tasks that add a 1-second delay. The application accepts 1 single parameter that indicates the number of tasks to be created. Each of these tasks waits for 1 second and prints its starting and ending timestamps. For doing that, the `main_pycompss.py` method parses the command-line argument and invokes the `iterative_delay` method. This latter method invokes as many times as indicated in the argument the `add_delay` method.
 
-In order to enable the exection of the `demo_app` in a COMPSs Agent deployment, an additional method has been added: `main_agents`. This method -- decorated with @task -- does exactly the same as the `main` method but using method parameters instead of obtaining the command-line arguments.
+In order to enable the exection of the `demo_app` in a COMPSs Agent deployment, an additional method has been added: `main_agents`. This method -- decorated with @task -- does exactly the same as the `main_pycompss.py` method but using method parameters instead of obtaining the command-line arguments.
 
 The code of both applications can be found in the `app` folder in this repostory.
 
@@ -38,7 +38,7 @@ As explained, the `/tmp/Agent1` folder contains all the logs of the deployed age
 ### 2. Submitting a request to execute a function to an isolated agent
 The Agent API offers an endpoint where to submit requests to execute applications; however, to simplify the invocation, the COMPSs framework provides the `compss_agents_call_operation` script.  
 
-The following command requests an execution of `main` method of the Python module named `test_app` with no parameters.
+The following command requests an execution of `main_pycompss.py` method of the Python module named `test_app` with no parameters.
 ```
 compss_agent_call_operation \
    --master_node=127.0.0.1 \
@@ -47,7 +47,7 @@ compss_agent_call_operation \
    test_app
 ```
 Once the Agent receives this invocation, it should print the following message `Received REST call to run a PYTHON method` in the standard output of the Agent. After a 5 seconds (plus some overhead due to the starting all the internal agent), it will appear a message indicating how long it took for the request to run.
-Since the method has been invoked as a task, it has been executed as a job (job1). Therefore, we will have a `job1_NEW.out` and a `job1_NEW.err` files in the `/tmp/Agent1/jobs` folder. There we can check that the output of the job corresponds to what should be printed by an execution of the `main` method of the `test_app`.
+Since the method has been invoked as a task, it has been executed as a job (job1). Therefore, we will have a `job1_NEW.out` and a `job1_NEW.err` files in the `/tmp/Agent1/jobs` folder. There we can check that the output of the job corresponds to what should be printed by an execution of the `main_pycompss.py` method of the `test_app`.
 
 
 One of the key features of COMPSs Agents is the resource management to ensure resource exclusivity. To verify that, the previous execution request can be submitted three times in a row. The default configuration of an agent sets up a single CPU core; therefore, only one task can run at a time. The three submitted requests will enqueue and be executed subsequently. Right after the submission, the Agent output log should contain three times the acknowledge of receiving the request. After the submission and waiting for about 15 seconds, the output log should show some messages similar to this:
@@ -62,7 +62,7 @@ App completed after 14158
 Although the execution time for each application should be 5 seconds, the time-to-complete for the third invocation usually is less that 15 seconds (10 waiting + 5 executing). This is because the delay between request. The actual times when each task has been executed can be checked at the jobs folder, where there should be 4 jobs: the first execution and these three. Checking the output of jobs 2 to 4, it can be verified that the Agent has guaranteed the exclusivity of resources.
 
 ### 3. Submitting a request to execute a workflow to an isolated agent
-The `main` method of the `test_app` application is a simple task; however, the `demo_app` application has methods invoking other functions decorated with `@task`. For instance, the `main_agents` method creates N `add_delay` tasks where N depends on an input parameter.
+The `main_pycompss.py` method of the `test_app` application is a simple task; however, the `demo_app` application has methods invoking other functions decorated with `@task`. For instance, the `main_agents` method creates N `add_delay` tasks where N depends on an input parameter.
 
 Submitting the following command will start the execution of the main method that should create 5 `add_delay` tasks
 ```

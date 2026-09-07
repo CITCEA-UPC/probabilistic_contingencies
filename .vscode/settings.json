@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./VeraGrid/src",
+        "./0.",
+        "./A."
+    ]
+}

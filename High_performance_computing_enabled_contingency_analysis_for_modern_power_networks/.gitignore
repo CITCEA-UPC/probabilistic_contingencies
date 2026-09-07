@@ -1,0 +1,52 @@
+# LaTeX secondary files
+*.aux
+*.bbl
+*.blg
+*.brf
+*.fls
+*.fdb_latexmk
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.xdv
+*.pdf
+*.dvi
+*.ps
+*.eps
+*.glg
+*.glo
+*.gls
+*.ist
+*.acn
+*.acr
+*.alg
+*.run.xml
+*.bcf
+*.blx.bib
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+*.maf
+*.mtc*
+*.slg
+*.slo
+*.sls
+*.svg
+*.xdy
+# Editor backup files
+*~
+*.swp
+*.bak
+*.tmp
+# MacOS
+.DS_Store
+# Windows
+Thumbs.db
