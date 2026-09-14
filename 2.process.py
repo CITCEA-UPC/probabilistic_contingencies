@@ -1,37 +1,25 @@
-import os
-import sys
-import sqlite3
 import argparse
 import ast
+import os
+import sqlite3
 import time
-
-from sklearn.externals.array_api_compat import device
-
 import config
 
-ROOT = config.ROOT
-VERAGRID_SRC = config.VERAGRID_SRC
-if VERAGRID_SRC not in sys.path:
-    sys.path.insert(0, VERAGRID_SRC)
-
 import VeraGridEngine.api as vge
-
-
-from VeraGridEngine.Simulations.EMT.emt_options import *
 from VeraGridEngine.Simulations.EMT.emt_driver import EmtSimulationDriver
-from VeraGridEngine.Templates.Emt.pi_line_emt_template import get_pi_line_emt_template
-from VeraGridEngine.Utils.Symbolic.templates_common_functions import set_emt_model
+from VeraGridEngine.Simulations.EMT.emt_options import *
 from VeraGridEngine.Templates.Emt.generator_emt_type_template import get_complete_generator_template_emt
-from VeraGridEngine.Templates.Emt.transformer_emt_template import get_series_transformer_emt_template
 from VeraGridEngine.Templates.Emt.load_RLC_emt_template import get_shunt_rlc_combo_emt_template
-
+from VeraGridEngine.Templates.Emt.pi_line_emt_template import get_pi_line_emt_template
+from VeraGridEngine.Templates.Emt.transformer_emt_template import get_series_transformer_emt_template
+from VeraGridEngine.Utils.Symbolic.templates_common_functions import set_emt_model
+from VeraGridEngine.Utils.Symbolic.bus_emt_template import get_bus_emt_template
 
 from VeraGridEngine.enumerations import (
     DynamicIntegrationMethod,
     EmtInitializationMethod,
     EmtSolverTypes,
     ShuntConnectionType,
-    WindingType,
 )
 
 DB_FILE = config.DB_FILE
@@ -56,23 +44,40 @@ def load_contingency_from_db(contingency_id):
     return contingency
 
 
-def save_results_to_db(contingency_id, errors, powerflow_converged, stable, islands, execution_time, calculated):
+def save_results_to_db(
+    contingency_id,
+    errors,
+    powerflow_converged,
+    stable,
+    islands,
+    execution_time,
+    calculated,
+):
     """Save the contingency information to a database file"""
     print(f"Saving contingency: {contingency_id}")
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE contingency_results
-        SET errors = ?,
-            powerflow_converged = ?,
-            stable = ?,
-            islands = ?,
-            execution_time = ?,
-            calculated = ?
-        WHERE contingency_id = ?
-    ''', (errors, powerflow_converged, stable, islands, execution_time, calculated, contingency_id))
-    conn.commit()
-    conn.close()
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute(
+            """
+            UPDATE contingency_results
+            SET errors = ?,
+                powerflow_converged = ?,
+                stable = ?,
+                islands = ?,
+                execution_time = ?,
+                calculated = ?
+            WHERE contingency_id = ?
+            """,
+            (
+                errors,
+                powerflow_converged,
+                stable,
+                islands,
+                execution_time,
+                calculated,
+                contingency_id,
+            ),
+        )
 
 def detect_islands(grid):
     """
@@ -113,37 +118,53 @@ def calculate_contingency(contingency):
     tic = time.perf_counter()
     grid = vge.open_file(contingency["grid_path"])
 
-    for line_id, line in enumerate(grid.lines):
-        line_emt_model = get_pi_line_emt_template(
-            vf=grid.var_factory,
-            phN=False,
-            phA=True,
-            phB=True,
-            phC=True,
-            name=f"{line.name}",
-            numerical_damping_conductance=0.0,
-        ).block
-        set_emt_model(device=line, model=line_emt_model, var_factory=grid.var_factory)
+    lines_to_deactivate = ast.literal_eval(contingency["lines"])
+    generators_to_deactivate = ast.literal_eval(contingency["generators"])
+    transformers_to_deactivate = ast.literal_eval(contingency["transformers"])
+
+    for bus in grid.buses:
+        get_bus_emt_template(grid, bus)
+
+    for line_id in lines_to_deactivate:
         grid.lines[line_id].active = False
 
-    for generator_id, generator in enumerate(grid.generators):
-        generator_emt_model = get_complete_generator_template_emt(
-            vf=grid.var_factory,
-            conventional_three_phase_base=True,
-        ).block
-        set_emt_model(device=generator, model=generator_emt_model, var_factory=grid.var_factory)
+    for generator_id in generators_to_deactivate:
         grid.generators[generator_id].active = False
 
-    for transformer_id, transformer in enumerate(grid.transformers2w):
-        transformer_emt_model = get_series_transformer_emt_template(
-            vf=grid.var_factory,
-            name=f"{transformer.name}",
-            r=transformer.R,
-            x=transformer.X,
-            tap_module=transformer.tap_module,
-        ).block
-        set_emt_model(device=transformer, model=transformer_emt_model, var_factory=grid.var_factory)
+    for transformer_id in transformers_to_deactivate:
         grid.transformers2w[transformer_id].active = False
+
+    for line_id, line in enumerate(grid.lines):
+        if line.active:
+            line_emt_model = get_pi_line_emt_template(
+                vf=grid.var_factory,
+                phN=False,
+                phA=True,
+                phB=True,
+                phC=True,
+                name=f"{line.name}",
+                numerical_damping_conductance=0.0,
+            ).block
+            set_emt_model(device=line, model=line_emt_model, var_factory=grid.var_factory)
+
+    for generator_id, generator in enumerate(grid.generators):
+        if generator.active:
+            generator_emt_model = get_complete_generator_template_emt(
+                vf=grid.var_factory,
+                conventional_three_phase_base=True,
+            ).block
+            set_emt_model(device=generator, model=generator_emt_model, var_factory=grid.var_factory)
+
+    for transformer_id, transformer in enumerate(grid.transformers2w):
+        if transformer.active:
+            transformer_emt_model = get_series_transformer_emt_template(
+                vf=grid.var_factory,
+                name=f"{transformer.name}",
+                r=transformer.R,
+                x=transformer.X,
+                tap_module=transformer.tap_module,
+            ).block
+            set_emt_model(device=transformer, model=transformer_emt_model, var_factory=grid.var_factory)
 
     for load_id, load in enumerate(grid.loads):
         load_emt_model = get_shunt_rlc_combo_emt_template(
@@ -172,27 +193,6 @@ def calculate_contingency(contingency):
 
     results["execution_time"] = time.perf_counter() - tic
     return results
-
-
-
-def save_results_to_db(contingency_id, errors, powerflow_converged, stable, islands, execution_time, calculated):
-    """Save the contingency information to a database file"""
-    print(f"Saving contingency: {contingency_id}")
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE contingency_results
-        SET errors = ?,
-            powerflow_converged = ?,
-            stable = ?,
-            islands = ?,
-            execution_time = ?,
-            calculated = ?
-        WHERE contingency_id = ?
-    ''', (errors, powerflow_converged, stable, islands, execution_time, calculated, contingency_id))
-    conn.commit()
-    conn.close()
-    
 
 
 def main():

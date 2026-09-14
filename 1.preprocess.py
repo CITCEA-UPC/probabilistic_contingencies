@@ -12,7 +12,8 @@ VERAGRID_SRC = config.VERAGRID_SRC
 if VERAGRID_SRC not in sys.path:
     sys.path.insert(0, VERAGRID_SRC)
 
-import VeraGridEngine.api as vge
+import VeraGrid_TenSyGrid.src.VeraGridEngine as vge
+#import VeraGridEngine.api as vge
 
 
 if config.TEST_1_PREPROCESS:
