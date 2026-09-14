@@ -5,6 +5,8 @@ import argparse
 import ast
 import time
 
+from sklearn.externals.array_api_compat import device
+
 import config
 
 ROOT = config.ROOT
@@ -13,6 +15,24 @@ if VERAGRID_SRC not in sys.path:
     sys.path.insert(0, VERAGRID_SRC)
 
 import VeraGridEngine.api as vge
+
+
+from VeraGridEngine.Simulations.EMT.emt_options import *
+from VeraGridEngine.Simulations.EMT.emt_driver import EmtSimulationDriver
+from VeraGridEngine.Templates.Emt.pi_line_emt_template import get_pi_line_emt_template
+from VeraGridEngine.Utils.Symbolic.templates_common_functions import set_emt_model
+from VeraGridEngine.Templates.Emt.generator_emt_type_template import get_complete_generator_template_emt
+from VeraGridEngine.Templates.Emt.transformer_emt_template import get_series_transformer_emt_template
+from VeraGridEngine.Templates.Emt.load_RLC_emt_template import get_shunt_rlc_combo_emt_template
+
+
+from VeraGridEngine.enumerations import (
+    DynamicIntegrationMethod,
+    EmtInitializationMethod,
+    EmtSolverTypes,
+    ShuntConnectionType,
+    WindingType,
+)
 
 DB_FILE = config.DB_FILE
 
@@ -68,12 +88,22 @@ def detect_islands(grid):
 
     return len(islas_list) > 1
 
-def run_small_signal_analysis(grid):
+def run_small_signal_emt_analysis(grid, pf_results):
+    emt_options = EmtOptions(
+        time_step=1e-6,
+        simulation_time=0.02,
+        tolerance=1e-6,
+        solver_type=EmtSolverTypes.StructuralAD,
+        integration_method=DynamicIntegrationMethod.DaeTrapezoidal,
+        initialization_method=EmtInitializationMethod.Auto,
+        verbose=0,
+    )
 
-
-
+    driver = EmtSimulationDriver(grid=grid, options=emt_options, pf_results=pf_results)
+    driver.run()
+    emt_results = driver.results
     result = {
-        "stable": True,
+        "stable": emt_results,
         "error": False
     }
     return result
@@ -83,21 +113,60 @@ def calculate_contingency(contingency):
     tic = time.perf_counter()
     grid = vge.open_file(contingency["grid_path"])
 
-    for line_id, _ in enumerate(grid.lines): 
+    for line_id, line in enumerate(grid.lines):
+        line_emt_model = get_pi_line_emt_template(
+            vf=grid.var_factory,
+            phN=False,
+            phA=True,
+            phB=True,
+            phC=True,
+            name=f"{line.name}",
+            numerical_damping_conductance=0.0,
+        ).block
+        set_emt_model(device=line, model=line_emt_model, var_factory=grid.var_factory)
         grid.lines[line_id].active = False
-    for generator_id, _ in enumerate(grid.generators): 
+
+    for generator_id, generator in enumerate(grid.generators):
+        generator_emt_model = get_complete_generator_template_emt(
+            vf=grid.var_factory,
+            conventional_three_phase_base=True,
+        ).block
+        set_emt_model(device=generator, model=generator_emt_model, var_factory=grid.var_factory)
         grid.generators[generator_id].active = False
-    for transformer_id, _ in enumerate(grid.transformers2w): 
+
+    for transformer_id, transformer in enumerate(grid.transformers2w):
+        transformer_emt_model = get_series_transformer_emt_template(
+            vf=grid.var_factory,
+            name=f"{transformer.name}",
+            r=transformer.R,
+            x=transformer.X,
+            tap_module=transformer.tap_module,
+        ).block
+        set_emt_model(device=transformer, model=transformer_emt_model, var_factory=grid.var_factory)
         grid.transformers2w[transformer_id].active = False
 
+    for load_id, load in enumerate(grid.loads):
+        load_emt_model = get_shunt_rlc_combo_emt_template(
+            vf=grid.var_factory,
+            include_r=True,
+            include_l=abs(load.Q) > 1.0e-15,
+            include_c=False,
+            phA=True,
+            phB=True,
+            phC=True,
+            connection_type=ShuntConnectionType.FloatingStar,
+            name=f"{load.name}_RL_emt",
+        ).block
+        set_emt_model(device=load, model=load_emt_model, var_factory=grid.var_factory)
+
     pf_results = vge.power_flow(grid)
-    small_signal_results = run_small_signal_analysis(grid)
+    small_signal_emt_results = run_small_signal_emt_analysis(grid, pf_results)
 
     results = {
         "powerflow_converged": pf_results.converged,
-        "stable": small_signal_results["stable"],
+        "stable": small_signal_emt_results["stable"],
         "islands": detect_islands(grid),
-        "errors": False or pf_results.error or small_signal_results["error"],
+        "errors": False or pf_results.error or small_signal_emt_results["error"],
         "calculated": True,
     }
 
