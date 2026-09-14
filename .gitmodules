@@ -4,3 +4,6 @@
 [submodule "VeraGrid_Tensygrid"]
     path = VeraGrid_Tensygrid
     url = git@github.com:CITCEA-UPC/VeraGrid_TenSyGrid.git
+[submodule "VeraGrid_TenSyGrid"]
+	path = VeraGrid_TenSyGrid
+	url = git@github.com:CITCEA-UPC/VeraGrid_TenSyGrid.git
