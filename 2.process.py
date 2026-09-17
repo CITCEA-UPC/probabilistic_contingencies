@@ -38,6 +38,7 @@ from VeraGridEngine.enumerations import (
     ShuntConnectionType,
 )
 
+
 DB_FILE = config.DB_FILE
 
 def load_contingency_from_db(contingency_id):
@@ -174,7 +175,7 @@ def get_buses_with_few_connections(grid):
     # Retornar busos amb menys de 2 connexions
     return {bus for bus in grid.buses if bus_connection_count.get(bus, 0) < 2}
 
-def run_small_signal_emt_analysis(grid, pf_results):
+def run_small_signal_emt_analysis(grid, pf_results, pf_results_3):
     emt_options = EmtOptions(
         time_step=1e-6,
         simulation_time=0.02,
@@ -184,8 +185,7 @@ def run_small_signal_emt_analysis(grid, pf_results):
         initialization_method=EmtInitializationMethod.Auto,
         verbose=0,
     )
-
-    driver = EmtSimulationDriver(grid=grid, options=emt_options, pf_results=pf_results)
+    driver = EmtSimulationDriver(grid=grid, options=emt_options, pf_results=pf_results, pf_results_3ph=pf_results_3)
     driver.run()
     emt_results = driver.results
     stable = bool(emt_results.well_initialized.all()) and bool(emt_results.converged.all())
@@ -210,17 +210,15 @@ def calculate_contingency(contingency):
 
     # Detectar busos problemàtics (menys de 2 connexions actives)
     # Aquests busos causarien errors EMT per "floating phases"
-    problematic_buses = get_buses_with_few_connections(grid)
-    has_islands = len(problematic_buses) > 0 or detect_islands(grid)
+    pf_results_3 = vge.power_flow3ph(grid)
 
     pf_results = vge.power_flow(grid)
-
     # Si el PF no convergeix, no fer EMT
     if not pf_results.converged:
         return {
             "powerflow_converged": pf_results.converged,
             "stable": False,
-            "islands": has_islands,
+            "islands": detect_islands(grid),
             "errors": False,
             "calculated": True,
             "execution_time": time.perf_counter() - tic,
@@ -228,8 +226,7 @@ def calculate_contingency(contingency):
 
     # Crear models EMT només per a elements actius i busos no problemàtics
     for bus in grid.buses:
-        if bus not in problematic_buses:
-            get_bus_emt_template(grid, bus)
+        get_bus_emt_template(grid, bus)
 
     for line in grid.lines:
         if line.active:
@@ -240,7 +237,7 @@ def calculate_contingency(contingency):
             set_emt_model(device=line, model=model, var_factory=grid.var_factory)
 
     for gen in grid.generators:
-        if gen.active and gen.bus not in problematic_buses:
+        if gen.active:
             model = get_complete_generator_template_emt(
                 vf=grid.var_factory, conventional_three_phase_base=True,
             ).block
@@ -255,7 +252,7 @@ def calculate_contingency(contingency):
             set_emt_model(device=trafo, model=model, var_factory=grid.var_factory)
 
     for load in grid.loads:
-        if load.active and load.bus not in problematic_buses:
+        if load.active:
             model = get_shunt_rlc_combo_emt_template(
                 vf=grid.var_factory, include_r=True,
                 include_l=abs(load.Q) > 1.0e-15, include_c=False,
@@ -264,13 +261,13 @@ def calculate_contingency(contingency):
                 name=f"{load.name}_RL_emt",
             ).block
             set_emt_model(device=load, model=model, var_factory=grid.var_factory)
-
-    emt_results = run_small_signal_emt_analysis(grid, pf_results)
+    var_debug = True
+    emt_results = run_small_signal_emt_analysis(grid, pf_results, pf_results_3)
 
     return {
         "powerflow_converged": pf_results.converged,
         "stable": emt_results["stable"],
-        "islands": has_islands,
+        "islands": detect_islands(grid),
         "errors": not pf_results.converged or emt_results["error"],
         "calculated": True,
         "execution_time": time.perf_counter() - tic,
