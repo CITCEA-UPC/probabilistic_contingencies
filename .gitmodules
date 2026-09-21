@@ -1,6 +1,6 @@
 [submodule "stability_analysis"]
 	path = stability_analysis
-	url = git@github.com/iraola/stability_analysis
+	url = git@github.com:iraola/stability_analysis.git
 [submodule "VeraGrid_TenSyGrid"]
 	path = VeraGrid_TenSyGrid
 	url = git@github.com:CITCEA-UPC/VeraGrid_TenSyGrid.git

@@ -38,7 +38,7 @@ fi
 
 echo "Processing $contingency_count contingencies locally"
 # Per defecte, fem servir el 80% dels cores disponibles (mínim 1).
-job_slots="${JOB_SLOTS:-$(( $(nproc) * 80 / 100 ))}"
+job_slots="${JOB_SLOTS:-$(( $(nproc) * 40 / 100 ))}"
 job_slots="${job_slots:-1}"
 if [[ "$job_slots" -lt 1 ]]; then
     job_slots=1
