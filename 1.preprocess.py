@@ -19,6 +19,9 @@ contingència en entorn paral·lel. Vegeu docs/buses_aislados_emt.md.
 import os
 import sqlite3
 import sys
+import time
+
+from click import pause
 
 import config
 
@@ -92,7 +95,11 @@ def ensure_schema(conn):
 if config.TEST_1_PREPROCESS:
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
-        print("Database file deleted")
+        print("Deleted existing results.db for TEST_1_PREPROCESS.")
+        for i in range(3, 0, -1):
+            print(f"\rContinuing in {i} second(s)...", end="", flush=True)
+            time.sleep(1)
+        print("\rContinuing now!               ")
 
 
 def save_contingency(conn, name, path, lines, generators, transformers, level):

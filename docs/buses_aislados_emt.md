@@ -291,9 +291,25 @@ Con el EMT temporal completado (`status='ok'`), `2.process.py` ejecuta
 columna `eigenvalues`. Si este paso falla: `status='small_signal_error'`
 conservando el veredicto temporal del EMT.
 
-Coste: el análisis de Floquet añade ~46 s por contingencia `ok` en el IEEE 9
-(contingencia 13: 4.8 s → 51.2 s). Ajustable con `SMALL_SIGNAL_MODES` y
+Coste: con la simulación real activada (ver §7.2), una contingencia `ok` del
+IEEE 9 cuesta ~317 s: el transitorio EMT de 20 ms con `time_step=1e-6`
+(20 000 pasos) ~270 s, y el análisis de Floquet ~45 s. Ajustable con el
+`time_step` de `run_small_signal_emt_analysis` y con `SMALL_SIGNAL_MODES` /
 `STEPS_PER_PERIOD` en `2.process.py`.
+
+Validación de los modos inestables (contingencia 13): dos métodos
+independientes confirman que la inestabilidad es **física**, no un
+artefacto de Arnoldi:
+
+- Transitorio EMT largo (2 s, `time_step=2e-5`): la simulación diverge con
+  fallos de Newton (`converged=False`) y la envolvente RMS de las tres
+  `omega_gen` crece ~×10⁴.
+- Floquet refinado (1200 pasos/periodo, Krylov 60, 2 relanzamientos): los 6
+  modos inestables persisten y se refuerzan (Re λ: 2.49→3.10, 0.14→0.82,
+  0.05→0.58) y los estables se reproducen (p. ej. -0.731±7.43j →
+  -0.978±7.54j). La configuración base (600 pasos, Krylov 30) es
+  cualitativamente fiable (signos de Re λ robustos) pero cuantitativamente
+  aproximada para los modos inestables.
 
 Nota de interpretación: el criterio de estabilidad es **modal**: `stable=1`
 exige que el transitorio corto sea numéricamente sano y que todos los modos

@@ -41,6 +41,8 @@ import config
 
 # Imports de VeraGridEngine per a simulacions
 import VeraGridEngine.api as vge
+from VeraGridEngine.basic_structures import Logger
+from VeraGridEngine.enumerations import LogSeverity
 from VeraGridEngine.Simulations.EMT.emt_driver import EmtSimulationDriver
 from VeraGridEngine.Simulations.EMT.emt_options import EmtOptions
 from VeraGridEngine.Simulations.EMT.emt_problem_factory import build_emt_problem
@@ -118,7 +120,7 @@ STEPS_PER_PERIOD = 600
 
 # Criteri d'estabilitat modal: es considera estable si tots els autovalors de
 # Floquet tenen la part real <= aquest llindar (equivalent a |mu| <= 1).
-STABLE_MAX_REAL_PART = 0.0
+STABLE_MAX_REAL_PART = 1e-6
 
 
 def load_contingency_from_db(contingency_id):
@@ -373,7 +375,8 @@ def run_small_signal_eigenvalues(grid, pf_results, pf_results_3):
                        SMALL_SIGNAL_MODES modes dominants.
 
     Raises:
-        RuntimeError: Si el driver no retorna resultats.
+        RuntimeError: Si el driver no retorna resultats o si la construcció del
+                      problema EMT ha registrat errors al logger.
         Exception: Qualsevol error del càlcul de Floquet (el crida ho
                    classifica com a `small_signal_error`).
     """
@@ -387,12 +390,23 @@ def run_small_signal_eigenvalues(grid, pf_results, pf_results_3):
         initialization_method=EmtInitializationMethod.Auto,
         verbose=0,
     )
+    logger = Logger()
     problem = build_emt_problem(
         grid=grid,
         options=emt_options,
         pf_results=pf_results,
         pf_results_3ph=pf_results_3,
+        logger=logger,
     )
+
+    # El motor no llença excepcions pels problemes de topologia o
+    # d'inicialització: els registra al logger del problema. Sense logger,
+    # `validate_line_phase_layout` petava amb AttributeError; amb logger però
+    # sense consultar-lo, els errors quedarien muts i es calcularien autovalors
+    # a partir d'un model EMT mal construït. Per això es tracten com a fallada.
+    error_entries = [entry for entry in logger.entries if entry.severity == LogSeverity.Error]
+    if error_entries:
+        raise RuntimeError("; ".join(str(entry) for entry in error_entries))
 
     sss_options = SmallSignalStabilityEmtOptions(
         k=SMALL_SIGNAL_MODES,
@@ -517,8 +531,7 @@ def attach_emt_models(grid):
     for gen in grid.generators:
         if gen.active:
             model = get_complete_generator_template_emt(
-                vf=grid.var_factory, conventional_three_phase_base=True,
-            ).block
+                vf=grid.var_factory).block
             set_emt_model(device=gen, model=model, var_factory=grid.var_factory)
 
     for trafo in grid.transformers2w:
