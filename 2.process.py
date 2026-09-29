@@ -652,6 +652,7 @@ def calculate_contingency(contingency):
     opf_needed = False
     opf_converged = None
     opf_results = None
+    opf_error = None
 
     def make_result(status, stable=False, errors=False, error_message=None, eigenvalues=None):
         """
@@ -695,17 +696,29 @@ def calculate_contingency(contingency):
     # "viable amb re-despatch" dels que no han convergit de cap manera.
     if not pf_results.converged:
         opf_needed = True
-        opf_driver = vge.OptimalPowerFlowDriver(grid=grid)
-        opf_driver.run()
-        opf_converged = bool(opf_driver.results.converged)
-        if opf_converged:
-            opf_results = opf_driver.results
-            pf_driver = vge.PowerFlowDriver(grid=grid, opf_results=opf_results)
-            pf_driver.run()
-            pf_results = pf_driver.results
+        try:
+            opf_driver = vge.OptimalPowerFlowDriver(grid=grid)
+            opf_driver.run()
+        except Exception as exc:
+            # Qualsevol error de l'OPF es tracta com si no hagués convergit.
+            opf_converged = False
+            opf_error = f"{type(exc).__name__}: {exc}"
+        else:
+            opf_converged = bool(opf_driver.results.converged)
+            if opf_converged:
+                opf_results = opf_driver.results
+                try:
+                    pf_driver = vge.PowerFlowDriver(grid=grid, opf_results=opf_results)
+                    pf_driver.run()
+                    pf_results = pf_driver.results
+                except Exception as exc:
+                    opf_error = f"PF re-sembrat: {type(exc).__name__}: {exc}"
 
     if not pf_results.converged:
-        return make_result(STATUS_PF_NOT_CONVERGED)
+        return make_result(
+            STATUS_PF_NOT_CONVERGED,
+            error_message=opf_error,
+        )
 
     # Cas 3: power flow trifàsic (només quan hi ha oportunitat de fer EMT,
     # perquè l'EMT s'inicialitza des d'aquesta solució). Es captura qualsevol
