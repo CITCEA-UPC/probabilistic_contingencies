@@ -206,6 +206,7 @@ logs/
 
 #Varios
 results_temporal.json
+results*.db
 slurm_outputs/*
 !slurm_outputs/.gitkeep
 new-GridCal/
