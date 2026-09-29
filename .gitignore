@@ -206,5 +206,6 @@ logs/
 
 #Varios
 results_temporal.json
+slurm_outputs/
 new-GridCal/
 temp_grids/

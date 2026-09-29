@@ -5,8 +5,8 @@
 # com un conjunt PETIT de "workers" (cada un processa moltes contingències),
 # per no superar el MaxSubmitJobsPerUser del QOS (cada tasca d'array compta).
 #SBATCH --job-name=contingencies
-#SBATCH --output=slurm-%x-%A_%a.out
-#SBATCH --error=slurm-%x-%A_%a.err
+#SBATCH --output=slurm_outputs/%A/slurm-%x-%A_%a.out
+#SBATCH --error=slurm_outputs/%A/slurm-%x-%A_%a.err
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
@@ -85,7 +85,11 @@ fi
 WORKER_TOTAL="${WORKER_TOTAL:-300}"
 
 echo "Submitting $WORKER_TOTAL worker tasks for $contingency_count contingencies"
-sbatch \
+mkdir -p slurm_outputs
+jobid=$(sbatch --parsable \
     --array="1-${WORKER_TOTAL}" \
     --export="ALL,PIPELINE_STAGE=process,WORKER_TOTAL=${WORKER_TOTAL},TOTAL_CONTINGENCIES=${contingency_count}" \
-    "$SCRIPT_DIR/exec_marenostrum.sh"
+    "$SCRIPT_DIR/exec_marenostrum.sh")
+# La carpeta amb el número de job s'ha de crear abans que els workers escriguin.
+mkdir -p "slurm_outputs/$jobid"
+echo "Submitted array job $jobid (logs a slurm_outputs/$jobid)"
