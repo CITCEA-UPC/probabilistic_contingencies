@@ -206,6 +206,7 @@ logs/
 
 #Varios
 results_temporal.json
-slurm_outputs/
+slurm_outputs/*
+!slurm_outputs/.gitkeep
 new-GridCal/
 temp_grids/

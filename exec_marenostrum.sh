@@ -85,7 +85,6 @@ fi
 WORKER_TOTAL="${WORKER_TOTAL:-300}"
 
 echo "Submitting $WORKER_TOTAL worker tasks for $contingency_count contingencies"
-mkdir -p slurm_outputs
 jobid=$(sbatch --parsable \
     --array="1-${WORKER_TOTAL}" \
     --export="ALL,PIPELINE_STAGE=process,WORKER_TOTAL=${WORKER_TOTAL},TOTAL_CONTINGENCIES=${contingency_count}" \
