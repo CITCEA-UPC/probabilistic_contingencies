@@ -40,7 +40,12 @@ if [[ "${PIPELINE_STAGE:-preprocess}" == "process" ]]; then
         exit 1
     fi
 
-    exec "$PYTHON_BIN" 2.process.py "$SLURM_ARRAY_TASK_ID"
+    # L'array està particionat en trossos; OFFSET trasllada l'índex de tasca
+    # (0-based) a l'identificador real de la contingència (1-based a la BD).
+    OFFSET="${OFFSET:-0}"
+    contingency_id=$(( SLURM_ARRAY_TASK_ID + OFFSET + 1 ))
+
+    exec "$PYTHON_BIN" 2.process.py "$contingency_id"
 fi
 
 # El job principal genera totes les contingències abans de crear l'array.
@@ -65,8 +70,33 @@ if [[ "$contingency_count" -lt 1 ]]; then
 fi
 
 # El preprocess ja ha acabat localment abans d'enviar l'array a Slurm.
-echo "Submitting process array for $contingency_count contingencies"
-sbatch \
-    --array="1-${contingency_count}%300" \
-    --export="ALL,PIPELINE_STAGE=process" \
-    "$SCRIPT_DIR/exec_marenostrum.sh"
+# Slurm limita la mida d'un array (MaxArraySize); amb milers de contingències
+# cal partir-lo en trossos. Cada tros és un array 0-based i OFFSET trasllada
+# l'índex de tasca a l'ID real de la contingència.
+CHUNK_SIZE="${CHUNK_SIZE:-}"
+if [[ -z "$CHUNK_SIZE" ]]; then
+    max_array=$(scontrol show config 2>/dev/null \
+        | sed -n 's/^[[:space:]]*MaxArraySize[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' \
+        | head -n1) || true
+    CHUNK_SIZE="${max_array:-1000}"
+    if (( CHUNK_SIZE < 1 )); then
+        CHUNK_SIZE=1000
+    fi
+fi
+
+MAX_CONCURRENT="${MAX_CONCURRENT:-300}"
+
+echo "Submitting process array for $contingency_count contingencies (chunks of $CHUNK_SIZE)"
+for (( offset = 0; offset < contingency_count; offset += CHUNK_SIZE )); do
+    end=$(( offset + CHUNK_SIZE ))
+    if (( end > contingency_count )); then
+        end=$contingency_count
+    fi
+    n=$(( end - offset ))          # nombre de tasques d'aquest tros
+    last_index=$(( n - 1 ))        # índex 0-based de l'última tasca
+
+    sbatch \
+        --array="0-${last_index}%${MAX_CONCURRENT}" \
+        --export="ALL,PIPELINE_STAGE=process,OFFSET=${offset}" \
+        "$SCRIPT_DIR/exec_marenostrum.sh"
+done
