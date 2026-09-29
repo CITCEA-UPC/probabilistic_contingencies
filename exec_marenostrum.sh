@@ -84,6 +84,11 @@ fi
 # contingency_count / WORKER_TOTAL contingències.
 WORKER_TOTAL="${WORKER_TOTAL:-300}"
 
+# No llancis més workers que contingències hi ha.
+if (( WORKER_TOTAL > contingency_count )); then
+    WORKER_TOTAL=$contingency_count
+fi
+
 echo "Submitting $WORKER_TOTAL worker tasks for $contingency_count contingencies"
 jobid=$(sbatch --parsable \
     --array="1-${WORKER_TOTAL}" \
