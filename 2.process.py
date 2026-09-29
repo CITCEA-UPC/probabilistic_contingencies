@@ -154,6 +154,19 @@ def load_contingency_from_db(contingency_id):
     return contingency
 
 
+def resolve_grid_path(path):
+    """
+    Resol el camí del grid desat a la base de dades.
+
+    El camí es desa RELATIU al ROOT del repo (vegeu 1.preprocess.py) perquè la
+    BD sigui portable entre màquines. Aquí el reconvertim en absolut per poder
+    obrir el fitxer. Si el camí ja és absolut (BD antigues), es retorna tal qual.
+    """
+    if os.path.isabs(path):
+        return path
+    return os.path.join(config.ROOT, path)
+
+
 def save_results_to_db(contingency_id, result):
     """
     Guarda els resultats d'una contingència a la base de dades.
@@ -627,7 +640,7 @@ def calculate_contingency(contingency):
               status i error_message.
     """
     tic = time.perf_counter()
-    grid = vge.open_file(contingency["grid_path"])
+    grid = vge.open_file(resolve_grid_path(contingency["grid_path"]))
 
     # Aplicar la contingència: desactivar els elements indicats.
     for line_id in ast.literal_eval(contingency["lines"]):

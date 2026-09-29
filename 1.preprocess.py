@@ -124,13 +124,16 @@ def save_contingency(conn, name, path, lines, generators, transformers, level):
         f"Saving contingency: {name} - Level {level} - Lines: {lines} - "
         f"Generators: {generators} - Transformers: {transformers}"
     )
+    # Desa el camí RELATIU al ROOT del repo, perquè la BD sigui portable entre
+    # màquines (local, BSC, etc.). 2.process.py el torna a resoldre.
+    relative_path = os.path.relpath(path, ROOT)
     conn.execute(
         """
         INSERT INTO contingency_results
             (grid_name, grid_path, lines, generators, transformers, level, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (name, str(path), str(lines), str(generators), str(transformers), level,
+        (name, relative_path, str(lines), str(generators), str(transformers), level,
          "pending"),
     )
 
