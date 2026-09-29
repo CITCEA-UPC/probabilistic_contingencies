@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 # Llança el pipeline al node local amb: ./exec_marenostrum.sh
-# El preprocess s'executa localment; només el process s'envia als nodes de càlcul.
+# El preprocess s'executa localment; el process s'envia als nodes de càlcul
+# com un conjunt PETIT de "workers" (cada un processa moltes contingències),
+# per no superar el MaxSubmitJobsPerUser del QOS (cada tasca d'array compta).
 #SBATCH --job-name=contingencies
 #SBATCH --output=slurm-%x-%A_%a.out
 #SBATCH --error=slurm-%x-%A_%a.err
-#SBATCH --time=01:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --account=bsc15
@@ -22,8 +24,11 @@ unset PYTHONPATH
 
 set -euo pipefail
 
-# Directori del repositori i intèrpret Python del projecte.
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# Directori del repositori. Quan Slurm executa una tasca d'array en un node de
+# càlcul, copia el script a l'spool (/scratch/slurm/jobXXXX) i BASH_SOURCE no
+# apunta al repo; llavors fem servir SLURM_SUBMIT_DIR (directori des d'on es
+# va fer sbatch), que és el repo correcte.
+SCRIPT_DIR="${SLURM_SUBMIT_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)}"
 PYTHON_BIN="${PYTHON_BIN:-${SCRIPT_DIR}/.venv/bin/python}"
 
 cd "$SCRIPT_DIR"
@@ -33,26 +38,31 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
     exit 1
 fi
 
-# Les tasques de l'array només processen la contingència assignada per Slurm.
+# Les tasques de l'array són "workers": cadascuna processa les contingències
+# el ID de les quals és congruent amb el seu índex mòdul WORKER_TOTAL.
 if [[ "${PIPELINE_STAGE:-preprocess}" == "process" ]]; then
     if [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
         echo "SLURM_ARRAY_TASK_ID is not set for the process stage." >&2
         exit 1
     fi
 
-    # L'array està particionat en trossos; OFFSET trasllada l'índex de tasca
-    # (0-based) a l'identificador real de la contingència (1-based a la BD).
-    OFFSET="${OFFSET:-0}"
-    contingency_id=$(( SLURM_ARRAY_TASK_ID + OFFSET + 1 ))
+    worker_id="$SLURM_ARRAY_TASK_ID"       # 1..WORKER_TOTAL
+    total="${TOTAL_CONTINGENCIES:?}"
+    workers="${WORKER_TOTAL:?}"
 
-    exec "$PYTHON_BIN" 2.process.py "$contingency_id"
+    for (( cid = worker_id; cid <= total; cid += workers )); do
+        "$PYTHON_BIN" 2.process.py "$cid" || {
+            echo "Error processant la contingència $cid (es continua amb la següent)." >&2
+        }
+    done
+    exit 0
 fi
 
-# El job principal genera totes les contingències abans de crear l'array.
+# El job principal genera totes les contingències abans de crear els workers.
 echo "Running preprocess"
 "$PYTHON_BIN" 1.preprocess.py
 
-# Consulta quantes files ha creat el preprocess per definir el rang de l'array.
+# Consulta quantes files ha creat el preprocess per definir el rang.
 contingency_count=$("$PYTHON_BIN" -c '
 import sqlite3
 import config
@@ -69,34 +79,13 @@ if [[ "$contingency_count" -lt 1 ]]; then
     exit 1
 fi
 
-# El preprocess ja ha acabat localment abans d'enviar l'array a Slurm.
-# Slurm limita la mida d'un array (MaxArraySize); amb milers de contingències
-# cal partir-lo en trossos. Cada tros és un array 0-based i OFFSET trasllada
-# l'índex de tasca a l'ID real de la contingència.
-CHUNK_SIZE="${CHUNK_SIZE:-}"
-if [[ -z "$CHUNK_SIZE" ]]; then
-    max_array=$(scontrol show config 2>/dev/null \
-        | sed -n 's/^[[:space:]]*MaxArraySize[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' \
-        | head -n1) || true
-    CHUNK_SIZE="${max_array:-1000}"
-    if (( CHUNK_SIZE < 1 )); then
-        CHUNK_SIZE=1000
-    fi
-fi
+# Nombre de workers (tasques de l'array). Ha de ser <= MaxSubmitJobsPerUser del
+# teu QOS (mira-ho amb `bsc_queues`). Cada worker processa aproximadament
+# contingency_count / WORKER_TOTAL contingències.
+WORKER_TOTAL="${WORKER_TOTAL:-300}"
 
-MAX_CONCURRENT="${MAX_CONCURRENT:-300}"
-
-echo "Submitting process array for $contingency_count contingencies (chunks of $CHUNK_SIZE)"
-for (( offset = 0; offset < contingency_count; offset += CHUNK_SIZE )); do
-    end=$(( offset + CHUNK_SIZE ))
-    if (( end > contingency_count )); then
-        end=$contingency_count
-    fi
-    n=$(( end - offset ))          # nombre de tasques d'aquest tros
-    last_index=$(( n - 1 ))        # índex 0-based de l'última tasca
-
-    sbatch \
-        --array="0-${last_index}%${MAX_CONCURRENT}" \
-        --export="ALL,PIPELINE_STAGE=process,OFFSET=${offset}" \
-        "$SCRIPT_DIR/exec_marenostrum.sh"
-done
+echo "Submitting $WORKER_TOTAL worker tasks for $contingency_count contingencies"
+sbatch \
+    --array="1-${WORKER_TOTAL}" \
+    --export="ALL,PIPELINE_STAGE=process,WORKER_TOTAL=${WORKER_TOTAL},TOTAL_CONTINGENCIES=${contingency_count}" \
+    "$SCRIPT_DIR/exec_marenostrum.sh"
