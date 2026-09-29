@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Llança el pipeline al node local amb: ./run_slurm.sh
+# Llança el pipeline al node local amb: ./exec_marenostrum.sh
 # El preprocess s'executa localment; només el process s'envia als nodes de càlcul.
 #SBATCH --job-name=contingencies
 #SBATCH --output=slurm-%x-%A_%a.out
@@ -70,4 +70,4 @@ echo "Submitting process array for $contingency_count contingencies"
 sbatch \
     --array="1-${contingency_count}%300" \
     --export="ALL,PIPELINE_STAGE=process" \
-    "$SCRIPT_DIR/exec.sh"
+    "$SCRIPT_DIR/exec_marenostrum.sh"

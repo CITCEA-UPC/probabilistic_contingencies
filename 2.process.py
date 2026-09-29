@@ -27,7 +27,6 @@ Vegeu docs/buses_aislados_emt.md per al perquè d'aquest disseny.
 
 Ús:
     python 2.process.py <contingency_id>
-    python 2.process.py  # si TEST_2_PROCESS=True a config.py
 """
 
 import argparse
@@ -169,7 +168,8 @@ def save_results_to_db(contingency_id, result):
                 (o el de reserva de `main()` en cas d'excepció). Ha de
                 contenir les claus: errors, powerflow_converged, stable,
                 islands, execution_time, calculated, isolated_buses,
-                n_islands, status, error_message i eigenvalues.
+                n_islands, status, error_message, eigenvalues, opf_needed i
+                opf_converged.
     """
     print(f"Saving contingency: {contingency_id}")
 
@@ -187,7 +187,9 @@ def save_results_to_db(contingency_id, result):
                 n_islands = ?,
                 status = ?,
                 error_message = ?,
-                eigenvalues = ?
+                eigenvalues = ?,
+                opf_needed = ?,
+                opf_converged = ?
             WHERE contingency_id = ?
             """,
             (
@@ -202,6 +204,8 @@ def save_results_to_db(contingency_id, result):
                 result.get("status"),
                 result.get("error_message"),
                 result.get("eigenvalues"),
+                result.get("opf_needed"),
+                result.get("opf_converged"),
                 contingency_id,
             ),
         )
@@ -642,6 +646,13 @@ def calculate_contingency(contingency):
     # omple el camp powerflow_converged fins i tot en els casos degenerats.
     pf_results = vge.power_flow(grid)
 
+    # Estat del fallback a optimal power flow. Només s'activa si el PF
+    # balancejat no convergeix (vegeu el "Cas 2" més avall); en cas contrari
+    # opf_needed roman False i opf_converged NULL.
+    opf_needed = False
+    opf_converged = None
+    opf_results = None
+
     def make_result(status, stable=False, errors=False, error_message=None, eigenvalues=None):
         """
         Construeix el diccionari de resultats amb les dades comunes.
@@ -664,6 +675,8 @@ def calculate_contingency(contingency):
             "eigenvalues": None if eigenvalues is None else json.dumps(
                 [[float(z.real), float(z.imag)] for z in eigenvalues]
             ),
+            "opf_needed": opf_needed,
+            "opf_converged": opf_converged,
         }
 
     # Cas 1: busos aïllats. L'EMT no pot simular aquesta topologia
@@ -674,7 +687,23 @@ def calculate_contingency(contingency):
     if isolated_bus_names:
         return make_result(STATUS_ISOLATED_BUSES)
 
-    # Cas 2: el power flow balancejat no ha convergit; no es pot fer EMT.
+    # Cas 2: el power flow balancejat no ha convergit. Abans de rendir-nos,
+    # provem l'optimal power flow (LINEAR_OPF per defecte): si troba un
+    # despatch factible, el fem servir per re-sembrar el power flow i, si
+    # aquest ara convergeix, continuem amb la resta de passes. Registrem
+    # opf_needed/opf_converged per poder distingir a 4.analyse.py els casos
+    # "viable amb re-despatch" dels que no han convergit de cap manera.
+    if not pf_results.converged:
+        opf_needed = True
+        opf_driver = vge.OptimalPowerFlowDriver(grid=grid)
+        opf_driver.run()
+        opf_converged = bool(opf_driver.results.converged)
+        if opf_converged:
+            opf_results = opf_driver.results
+            pf_driver = vge.PowerFlowDriver(grid=grid, opf_results=opf_results)
+            pf_driver.run()
+            pf_results = pf_driver.results
+
     if not pf_results.converged:
         return make_result(STATUS_PF_NOT_CONVERGED)
 
@@ -684,7 +713,14 @@ def calculate_contingency(contingency):
     # que llença IndexError quan la mida dels arrays de branca no és
     # múltiple de 4 (p. ex. una illa amb 7 branques: Sf = 7x3 = 21).
     try:
-        pf_results_3 = vge.power_flow3ph(grid)
+        if opf_results is not None:
+            # Si venim del fallback OPF, re-sembrem també el trifàsic amb el
+            # despatch de l'OPF per millorar-ne la convergència.
+            pf3_driver = vge.PowerFlowDriver3Ph(grid=grid, opf_results=opf_results)
+            pf3_driver.run()
+            pf_results_3 = pf3_driver.results
+        else:
+            pf_results_3 = vge.power_flow3ph(grid)
     except Exception as exc:
         return make_result(
             STATUS_PF3_ERROR,
@@ -749,10 +785,8 @@ def main():
 
     if args.contingency_id is not None:
         contingency_id = args.contingency_id
-    elif config.TEST_2_PROCESS:
-        contingency_id = config.TEST_CONTINGENCY_ID
     else:
-        parser.error("contingency_id is required when TEST_2_PROCESS is False")
+        parser.error("contingency_id is required")
 
     contingency = load_contingency_from_db(contingency_id)
 
@@ -774,6 +808,8 @@ def main():
             "status": STATUS_EXCEPTION,
             "error_message": f"{type(e).__name__}: {e}",
             "eigenvalues": None,
+            "opf_needed": False,
+            "opf_converged": None,
         }
 
     print(result)

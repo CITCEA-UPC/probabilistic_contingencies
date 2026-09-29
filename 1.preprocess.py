@@ -19,7 +19,6 @@ contingència en entorn paral·lel. Vegeu docs/buses_aislados_emt.md.
 import os
 import sqlite3
 import sys
-import time
 
 from click import pause
 
@@ -70,6 +69,12 @@ RESULT_COLUMNS = [
     ("status", "TEXT"),
     ("error_message", "TEXT"),
     ("eigenvalues", "TEXT"),
+    # Columnes afegides per al fallback a optimal power flow quan el power
+    # flow balancejat no convergeix (vegeu 2.process.py, "Cas 2"):
+    #   opf_needed:    True si es va provar l'OPF (el PF no havia convergit).
+    #   opf_converged: True/False si es va provar l'OPF; NULL si no calia.
+    ("opf_needed", "BOOLEAN"),
+    ("opf_converged", "BOOLEAN"),
 ]
 
 
@@ -92,14 +97,10 @@ def ensure_schema(conn):
     conn.commit()
 
 
-if config.TEST_1_PREPROCESS:
+if getattr(config, "CLEAR_DB_ON_START", False):
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
-        print("Deleted existing results.db for TEST_1_PREPROCESS.")
-        for i in range(3, 0, -1):
-            print(f"\rContinuing in {i} second(s)...", end="", flush=True)
-            time.sleep(1)
-        print("\rContinuing now!               ")
+        print("Deleted existing database (CLEAR_DB_ON_START = True).")
 
 
 def save_contingency(conn, name, path, lines, generators, transformers, level):
