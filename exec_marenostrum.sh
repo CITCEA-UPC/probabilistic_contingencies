@@ -8,7 +8,6 @@
 #SBATCH --time=01:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=2G
 #SBATCH --account=bsc15
 #SBATCH --qos=gp_bsccs
 #SBATCH --mail-type=END,FAIL
