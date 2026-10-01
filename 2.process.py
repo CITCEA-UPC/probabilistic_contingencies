@@ -76,6 +76,11 @@ import numpy as np
 
 DB_FILE = config.DB_FILE
 
+# Temps (en segons) que una connexió espera un lock d'escriptura abans de
+# llençar 'database is locked'. Amb molts processos escrivint en paral·lel a la
+# mateixa BD (un per contingència), SQLite només deixa escriure un alhora.
+DB_TIMEOUT = 60
+
 # Valors possibles de la columna `status` de contingency_results. L'esquema
 # de la taula el gestiona 1.preprocess.py (el script que crea la base de
 # dades); vegeu docs/buses_aislados_emt.md per a la classificació completa.
@@ -140,7 +145,7 @@ def load_contingency_from_db(contingency_id):
     if not os.path.exists(database_path):
         raise FileNotFoundError(f"Database not found: {database_path}")
 
-    with sqlite3.connect(database_path) as connection:
+    with sqlite3.connect(database_path, timeout=DB_TIMEOUT) as connection:
         connection.row_factory = sqlite3.Row
         contingency = connection.execute(
             "SELECT * FROM contingency_results WHERE contingency_id = ?",
@@ -186,7 +191,7 @@ def save_results_to_db(contingency_id, result):
     """
     print(f"Saving contingency: {contingency_id}")
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with sqlite3.connect(DB_FILE, timeout=DB_TIMEOUT) as conn:
         conn.execute(
             """
             UPDATE contingency_results

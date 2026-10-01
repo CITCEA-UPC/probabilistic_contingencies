@@ -44,8 +44,9 @@ if [[ "$job_slots" -lt 1 ]]; then
     job_slots=1
 fi
 echo "Using $job_slots parallel workers"
-seq 1 "$contingency_count" | xargs -I{} -P "$job_slots" \
-    "$PYTHON_BIN" 2.process.py {}
+if ! seq 1 "$contingency_count" | xargs -n1 -P "$job_slots" "$PYTHON_BIN" 2.process.py; then
+    echo "Alguna contingència ha fallat (mira el log)." >&2
+fi
 
 end_time=$(date +%s)
 elapsed=$(( end_time - start_time ))
