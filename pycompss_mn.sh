@@ -20,20 +20,20 @@
 # ---------------------------------------------------------------------------
 # ENTORN PYTHON (important!)
 # ---------------------------------------------------------------------------
-# Les @task corren en workers que han de poder fer:
-#   import config, contingency, VeraGridEngine, numpy, ...
-# Per tant, l'entorn Python de COMPSs ha de tenir pycompss I les dependències
-# de VeraGrid (numpy, numba, fmpy, matplotlib...). Dues opcions:
+# COMPSs 3.3.3 NO porta Python (en carregar-se diu "Python not found. Please
+# load a Python module"). Cal carregar-lo explícitament ABANS de COMPSs, amb
+# una versió que tingui binding compss (n'hi ha per Python 3.8, 3.10 i 3.12 a
+# /apps/GPP/COMPSs/3.3.3/Bindings/python/3/).
 #
-#   A) (recomanada) Instal·lar pycompss dins del .venv del projecte i fer-lo
-#      servir com a intèrpret:
-#          .venv/bin/pip install pycompss
-#          VENV="$PWD/.venv" ./pycompss_mn.sh --ids 1,2,3
-#   B) Fer servir el python del mòdul COMPSs i afegir el site-packages del
-#      .venv al PYTHONPATH (menys net, pot tenir conflictes de versions).
+# Les @task corren en workers que han de fer:
+#   import pycompss, compss, contingency, VeraGridEngine, numpy, ...
+# - pycompss i compss els proporciona el mòdul COMPSs (via el PYTHONPATH que
+#   enqueue_compss afegeix apuntant a Bindings/python/3/).
+# - numpy, numba, fmpy, VeraGrid... viuen al .venv del projecte (Python 3.12),
+#   que activem DESPRÉS de carregar python/3.12.1. Aquest mòdul python és
+#   imprescindible: sense ell, el python del .venv no troba libpython3.12.so.
 #
-# El mòdul COMPSs es carrega amb 'module load COMPSs/<versió>'; aquest mòdul
-# ja inclou Java, Python i el runtime. No carreguis altres Python a sobre.
+# Ordre correcte:  python/3.12.1  →  COMPSs/3.3.3  →  activar el .venv.
 # =============================================================================
 
 set -euo pipefail
@@ -48,8 +48,9 @@ QOS="${QOS:-gp_bsccs}"                              # quality of service
 NUM_NODES="${NUM_NODES:-1}"                         # nodes (1 = tot en un node)
 CPUS_PER_NODE="${CPUS_PER_NODE:-112}"               # cores/node (GPP: 112)
 WORKER_IN_MASTER_CPUS="${WORKER_IN_MASTER_CPUS:-112}"  # cores de worker al master
-EXEC_TIME="${EXEC_TIME:-720}"                       # walltime SLURM (minuts)
-WALL_CLOCK_LIMIT="${WALL_CLOCK_LIMIT:-42000}"       # límit COMPSs (segons, < EXEC_TIME*60)
+EXEC_TIME="${EXEC_TIME:-2880}"                       # walltime SLURM (minuts)
+WALL_CLOCK_LIMIT="${WALL_CLOCK_LIMIT:-172500}"       # límit COMPSs (segons, < EXEC_TIME*60)
+PYTHON_MODULE="${PYTHON_MODULE:-3.12.1}"             # mòdul python (ha de coincidir amb el venv)
 COMPSs_VERSION="${COMPSs_VERSION:-3.3.3}"           # versió del mòdul COMPSs
 JOB_NAME="${JOB_NAME:-contingencies_pycompss}"      # nom del job
 LOG_DIR="${LOG_DIR:-${SCRIPT_DIR}/compss_logs}"     # carpeta de logs COMPSs
@@ -59,11 +60,19 @@ TRACING="${TRACING:-}"                              # p. ex. TRACING="--tracing"
 # ---------------------------------------------------------------------------
 # Entorn Python
 # ---------------------------------------------------------------------------
+# 1) Python primer (COMPSs 3.3.3 NO el porta, i el .venv el necessita per a
+#    libpython3.12.so). La versió ha de coincidir amb la del .venv.
+module load hdf5
+module load "python/${PYTHON_MODULE}"
+
+# 2) COMPSs (proporciona pycompss + compss via el seu Bindings/python/3/).
 module load "COMPSs/${COMPSs_VERSION}"
 
-# Si s'indica un venv (opció A), l'activem perquè enqueue_compss l'usi com a
-# intèrpret i el propagui als workers (pycompss ha d'estar instal·lat dins).
-if [[ -n "${VENV:-}" ]]; then
+# 3) Activem el .venv (ara sí que funciona: libpython ja està disponible). Hi
+#    viuen les dependències de VeraGrid (numpy, numba, fmpy...). Per defecte
+#    el .venv del repo; sobreescriu-lo amb VENV=/ruta/al/venv si cal.
+VENV="${VENV:-${SCRIPT_DIR}/.venv}"
+if [[ -d "${VENV}" ]]; then
     # shellcheck disable=SC1091
     source "${VENV}/bin/activate"
     echo "Usant venv: ${VENV}"

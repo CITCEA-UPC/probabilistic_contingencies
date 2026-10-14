@@ -8,3 +8,4 @@ enqueue_compss --version
 
 # 3) i després escala
 NUM_NODES=20 COMPUTING_UNITS=8 ./pycompss_mn.sh
+QOS=gp_debug EXEC_TIME=120 NUM_NODES=1 COMPUTING_UNITS=8 ./pycompss_mn.sh
