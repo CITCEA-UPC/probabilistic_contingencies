@@ -1,0 +1,10 @@
+# 1) comprova l'entorn
+module available COMPSs
+module load COMPSs/3.3.3
+enqueue_compss --version
+
+# 2) prova mínima (una sola contingència)
+./pycompss_mn.sh --ids 1
+
+# 3) i després escala
+NUM_NODES=20 COMPUTING_UNITS=8 ./pycompss_mn.sh
