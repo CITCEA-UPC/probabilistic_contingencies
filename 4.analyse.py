@@ -2,7 +2,7 @@
 Script per analitzar els resultats d'una contingència de la base de dades.
 
 Carrega la fila de la contingència (definició, classificació i autovalors de
-Floquet desats per 2.process.py) i:
+Floquet desats per contingency.py) i:
   - Imprimeix un resum de la contingència i del seu estat.
   - Imprimeix una taula amb els modes (autovalor, freqüència i amortiment),
     ordenada del menys amortit al més amortit, amb la classificació

@@ -2,12 +2,10 @@
 Mòdul compartit amb la lògica de càlcul d'una contingència individual.
 
 Aquest mòdul conté tot el necessari per carregar, calcular i desar el resultat
-d'una única contingència a la base de dades. És la font de veritat que
-comparteixen:
-
-  - ``2.process.py``: CLI en sèrie (``python 2.process.py <contingency_id>``),
-  - ``pycompss_main.py``: punt d'entrada PyCOMPSs que embolcalla
-    ``process_contingency`` com a ``@task`` i el llança en paral·lel.
+d'una única contingència a la base de dades. És la font de veritat que fa
+servir ``main.py``, el punt d'entrada PyCOMPSs que embolcalla
+``process_contingency`` com a ``@task`` i el llança en paral·lel (amb
+``--preprocess`` genera la BD de contingències).
 
 El mòdul és agnòstic de PyCOMPSs (no hi ha cap import de ``pycompss``), de
 manera que també es pot fer servir en local sense tenir PyCOMPSs instal·lat.
@@ -79,8 +77,8 @@ DB_FILE = config.DB_FILE
 DB_TIMEOUT = 60
 
 # Valors possibles de la columna `status` de contingency_results. L'esquema
-# de la taula el gestiona 1.preprocess.py (el script que crea la base de
-# dades); vegeu docs/buses_aislados_emt.md per a la classificació completa.
+# de la taula el gestiona el preprocess (main.py --preprocess, que crea la
+# base de dades); vegeu docs/buses_aislados_emt.md per a la classificació completa.
 STATUS_OK = "ok"
 """Calculada completament (PF balancejat + PF trifàsic + EMT). `stable` indica el resultat."""
 
@@ -160,7 +158,7 @@ def resolve_grid_path(path):
     """
     Resol el camí del grid desat a la base de dades.
 
-    El camí es desa RELATIU al ROOT del repo (vegeu 1.preprocess.py) perquè la
+    El camí es desa RELATIU al ROOT del repo (vegeu el preprocess a main.py) perquè la
     BD sigui portable entre màquines. Aquí el reconvertim en absolut per poder
     obrir el fitxer. Si el camí ja és absolut (BD antigues), es retorna tal qual.
     """
@@ -175,7 +173,7 @@ def save_results_to_db(contingency_id, result):
 
     L'esquema de la taula (incloses les columnes `isolated_buses`,
     `n_islands`, `status` i `error_message`) el crea i migra
-    1.preprocess.py, que sempre s'executa abans que aquest script.
+    el preprocess (main.py --preprocess), que sempre s'executa abans de processar.
 
     Args:
         contingency_id: ID de la contingència.
@@ -808,8 +806,7 @@ def process_contingency(contingency_id):
     Encapsula el cicle complet ``load -> calculate -> save`` amb captura
     d'excepcions, de manera que un error d'una contingència mai no tira
     enrere la resta: es desa amb ``status='exception'`` i el missatge
-    complet. És la funció que comparteixen ``2.process.py`` (CLI en sèrie) i
-    ``pycompss_main.py`` (com a ``@task``).
+    complet. És la funció que ``main.py`` embolcalla com a ``@task``.
 
     Args:
         contingency_id: ID primari de la contingència.

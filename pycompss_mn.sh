@@ -3,9 +3,9 @@
 # pycompss_mn.sh — Pipeline de contingències amb PyCOMPSs al BSC MareNostrum 5
 # =============================================================================
 #
-# Llança pycompss_main.py (que processa cada contingència com una @task) a
-# través d'enqueue_compss, que envia la feina a SLURM i desplega el runtime
-# de COMPSs (master + workers) pels nodes demanats.
+# Llança main.py (que processa cada contingència com una @task) a través
+# d'enqueue_compss, que envia la feina a SLURM i desplega el runtime de
+# COMPSs (master + workers) pels nodes demanats.
 #
 # Ús:
 #   ./pycompss_mn.sh                  # processa les contingències 'pending'
@@ -94,4 +94,4 @@ enqueue_compss \
     --pythonpath="${PYTHONPATH}" \
     --log_dir="${LOG_DIR}" \
     ${TRACING} \
-    "${SCRIPT_DIR}/pycompss_main.py" "$@"
+    "${SCRIPT_DIR}/main.py" "$@"
