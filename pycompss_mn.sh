@@ -49,7 +49,6 @@ NUM_NODES="${NUM_NODES:-1}"                         # nodes (1 = tot en un node)
 CPUS_PER_NODE="${CPUS_PER_NODE:-112}"               # cores/node (GPP: 112)
 WORKER_IN_MASTER_CPUS="${WORKER_IN_MASTER_CPUS:-112}"  # cores de worker al master
 EXEC_TIME="${EXEC_TIME:-2880}"                       # walltime SLURM (minuts)
-WALL_CLOCK_LIMIT="${WALL_CLOCK_LIMIT:-172500}"       # límit COMPSs (segons, < EXEC_TIME*60)
 PYTHON_MODULE="${PYTHON_MODULE:-3.12.1}"             # mòdul python (ha de coincidir amb el venv)
 COMPSs_VERSION="${COMPSs_VERSION:-3.3.3}"           # versió del mòdul COMPSs
 JOB_NAME="${JOB_NAME:-contingencies_pycompss}"      # nom del job
