@@ -219,15 +219,24 @@ def run_preprocess():
 # PROCESS — les @task
 # =============================================================================
 
-@constraint(computing_units="1")
+# Cores que ocupa cada @task. Es pot sobreescriure amb la variable d'entorn
+# COMPUTING_UNITS (p. ex. COMPUTING_UNITS=8). El càlcul de VeraGrid és
+# monofil, així que 1 és el valor "natural" (màxima concurrència: tantes
+# tasques com cores per node). Si les tasques consumeixen molta memòria i vols
+# limitar quantes corren alhora per node, puja aquest valor: amb
+# computing_units=8 i 112 cores/node corren ~14 tasques per node en lloc de 112.
+COMPUTING_UNITS = os.environ.get("COMPUTING_UNITS", "1")
+
+
+@constraint(computing_units=COMPUTING_UNITS)
 @task(returns=1)
 def process_contingency_task(contingency_id):
     """
     Tasca PyCOMPSs: calcula una contingència i n'escriu el resultat a la BD.
 
-    ``computing_units="1"`` indica que cada tasca ocupa un sol core (el càlcul
-    de VeraGrid és monofil), de manera que se'n poden executar tantes com
-    cores disponibles en paral·lel.
+    ``computing_units`` (vegeu la constant ``COMPUTING_UNITS`` de dalt) indica
+    quants cores ocupa cada tasca; el scheduler de COMPSs fa córrer
+    ``cpus_per_node / computing_units`` tasques per node.
 
     Args:
         contingency_id: ID primari de la contingència a processar.

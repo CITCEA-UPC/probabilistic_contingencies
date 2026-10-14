@@ -53,6 +53,7 @@ WALL_CLOCK_LIMIT="${WALL_CLOCK_LIMIT:-42000}"       # límit COMPSs (segons, < E
 COMPSs_VERSION="${COMPSs_VERSION:-3.3.3}"           # versió del mòdul COMPSs
 JOB_NAME="${JOB_NAME:-contingencies_pycompss}"      # nom del job
 LOG_DIR="${LOG_DIR:-${SCRIPT_DIR}/compss_logs}"     # carpeta de logs COMPSs
+COMPUTING_UNITS="${COMPUTING_UNITS:-1}"             # cores per @task (@constraint)
 TRACING="${TRACING:-}"                              # p. ex. TRACING="--tracing" per activar-lo
 
 # ---------------------------------------------------------------------------
@@ -72,6 +73,10 @@ fi
 # (config.py ja injecta VeraGrid_TenSyGrid/src a sys.path, però així ho fem
 #  explícit i robust per als workers remots.)
 export PYTHONPATH="${SCRIPT_DIR}:${SCRIPT_DIR}/VeraGrid_TenSyGrid/src:${PYTHONPATH:-}"
+
+# Cores per tasca (el llegeix main.py com a @constraint(computing_units=...)).
+# Amb CPUS_PER_NODE=112 i COMPUTING_UNITS=8 corren ~14 tasques per node.
+export COMPUTING_UNITS
 
 mkdir -p "${LOG_DIR}"
 
