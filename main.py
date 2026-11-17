@@ -70,6 +70,7 @@ else:
 
 import config
 from contingencies import contingency, storage
+from contingencies.catalogue import iter_contingencies
 
 # config.py ja injecta VeraGrid_TenSyGrid/src a sys.path.
 import VeraGridEngine.api as vge
@@ -169,7 +170,7 @@ def run_preprocess():
     """
     Genera (o regenera) la base de dades de contingències.
 
-    Enumera totes les contingències N-1 i N-2 del grid de config.py i les
+    Enumera les contingències N-1 i N-2 úniques del grid de config.py i les
     insereix amb status='pending'. Si config.CLEAR_DB_ON_START és True, esborra
     la BD existent abans de començar.
     """
@@ -188,38 +189,12 @@ def run_preprocess():
         save_contingency(conn, config.GRID_NAME, config.GRID_PATH,
                          lines, generators, transformers, level)
 
-    # Lines 1 and 2 levels
-    for line_id_1, _ in enumerate(grid.lines):
-        save([line_id_1], [], [], 1)
-        for line_id_2, _ in enumerate(grid.lines):
-            if line_id_1 != line_id_2:
-                save([line_id_1, line_id_2], [], [], 2)
-        for generator_id, _ in enumerate(grid.generators):
-            save([line_id_1], [generator_id], [], 2)
-        for transformer_id, _ in enumerate(grid.transformers2w):
-            save([line_id_1], [], [transformer_id], 2)
-
-    # Generators 1 and 2 levels
-    for generator_id_1, _ in enumerate(grid.generators):
-        save([], [generator_id_1], [], 1)
-        for generator_id_2, _ in enumerate(grid.generators):
-            if generator_id_1 != generator_id_2:
-                save([], [generator_id_1, generator_id_2], [], 2)
-        for line_id, _ in enumerate(grid.lines):
-            save([line_id], [generator_id_1], [], 2)
-        for transformer_id, _ in enumerate(grid.transformers2w):
-            save([], [generator_id_1], [transformer_id], 2)
-
-    # Transformers 1 and 2 levels
-    for transformer_id_1, _ in enumerate(grid.transformers2w):
-        save([], [], [transformer_id_1], 1)
-        for transformer_id_2, _ in enumerate(grid.transformers2w):
-            if transformer_id_1 != transformer_id_2:
-                save([], [], [transformer_id_1, transformer_id_2], 2)
-        for line_id, _ in enumerate(grid.lines):
-            save([line_id], [], [transformer_id_1], 2)
-        for generator_id, _ in enumerate(grid.generators):
-            save([], [generator_id], [transformer_id_1], 2)
+    # Cada desconnexió final es genera una sola vegada. Els IDs pertanyen
+    # a aquesta BD: les BD anteriors es poden reprendre sense regenerar-les.
+    for lines, generators, transformers, level in iter_contingencies(
+        len(grid.lines), len(grid.generators), len(grid.transformers2w)
+    ):
+        save(lines, generators, transformers, level)
 
     conn.commit()
     conn.close()

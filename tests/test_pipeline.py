@@ -155,6 +155,20 @@ class PipelineTests(unittest.TestCase):
         risk.assert_called_once_with(str(copy), out_dir=None)
         self.assertEqual(self.pipeline.config.DB_FILE, str(copy))
 
+    def test_preprocess_creates_only_unique_n1_and_n2_definitions(self):
+        self.pipeline.config.GRID_NAME='test.raw'
+        self.pipeline.config.GRID_PATH=str(Path(self.tmp.name)/'test.raw')
+        self.pipeline.vge.open_file=Mock(return_value=types.SimpleNamespace(
+            lines=[object(),object()],generators=[object()],transformers2w=[object()],
+            transformers3w=[],loads=[]))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.pipeline.run_preprocess()
+        with sqlite3.connect(self.db) as c:
+            self.assertEqual(dict(c.execute('SELECT level,count(*) FROM contingency_results GROUP BY level')),{1:4,2:6})
+            definitions=list(c.execute('SELECT lines,generators,transformers FROM contingency_results'))
+            self.assertEqual(len(definitions),len(set(definitions)))
+            self.assertEqual(c.execute('SELECT level FROM contingency_results WHERE contingency_id=1').fetchone()[0],1)
+
     def test_database_directory_is_created_in_a_fresh_workspace(self):
         nested = Path(self.tmp.name) / 'outputs' / 'databases' / 'fresh.db'
         with patch.object(self.pipeline.config, 'DB_FILE', str(nested)), \

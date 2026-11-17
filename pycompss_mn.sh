@@ -36,7 +36,7 @@
 # Variables d'entorn disponibles:
 #   PROJECT, QOS, NUM_NODES, CPUS_PER_NODE, WORKER_IN_MASTER_CPUS,
 #   EXEC_TIME, COMPUTING_UNITS, PYTHON_MODULE, COMPSs_VERSION, VENV,
-#   JOB_NAME, LOG_DIR i TRACING.
+#   JOB_NAME, LOG_DIR, TRACING i NATIVE_THREADS (1 per defecte).
 #
 # Ordre de l'entorn: Python → COMPSs → venv. COMPSs proporciona pycompss
 # i compss; el venv conté les dependències del motor VeraGrid.
@@ -94,6 +94,14 @@ export PYTHONPATH="${SCRIPT_DIR}:${SCRIPT_DIR}/VeraGrid_TenSyGrid/src:${PYTHONPA
 # Cores per tasca (el llegeix main.py com a @constraint(computing_units=...)).
 # Amb CPUS_PER_NODE=112 i COMPUTING_UNITS=8 corren ~14 tasques per node.
 export COMPUTING_UNITS
+
+# Cada worker calcula amb un fil natiu per defecte. Evita que BLAS/OMP
+# creïn un equip de fils per cadascuna de les milers de tasques concurrents.
+NATIVE_THREADS="${NATIVE_THREADS:-1}"
+export OMP_NUM_THREADS="${NATIVE_THREADS}"
+export MKL_NUM_THREADS="${NATIVE_THREADS}"
+export OPENBLAS_NUM_THREADS="${NATIVE_THREADS}"
+export NUMEXPR_NUM_THREADS="${NATIVE_THREADS}"
 
 mkdir -p "${LOG_DIR}"
 

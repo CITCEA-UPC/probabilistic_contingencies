@@ -1,0 +1,97 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=24mm]{geometry}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\renewcommand{\labelitemi}{$\bullet$}
+\title{Possible false-positive EMT topology rejection\\at a capacitive PI-line terminal}
+\author{}
+\date{17 November 2026}
+\begin{document}
+\maketitle
+\vspace{-12mm}
+
+\section*{Describe the bug}
+The EMT connection validator rejects the original IEEE 118-bus input at bus
+73, \texttt{SARGENTS}, because each phase is connected to only one device:
+line \texttt{71\_73\_1}. That PI line already includes nonzero terminal
+capacitance. We suspect that counting external devices alone is too
+restrictive for this particular terminal model.
+
+The supplied base case has one connected electrical island, and both balanced
+and three-phase power flow converge. There are no outages in this reproduction.
+No slack assignment, dispatch, network parameter or validation rule is changed.
+The application cannot reach EMT initialization or subsequent modal analysis.
+
+\section*{To Reproduce}
+\begin{enumerate}
+\item Use the VeraGrid development revision listed below, with its normal
+Python dependencies installed. No PyCOMPSs, Slurm or application repository
+is needed to run the attached script.
+\item Extract the files into one directory and run:\\
+\verb|python reproduce.py --out result.json|
+\item The script loads the attached \texttt{IEEE118busNREL.raw}, runs both
+power flows, attaches EMT templates and calls the public
+\texttt{build\_emt\_problem} factory with both power-flow results.
+\item Observe \texttt{EmtTopologyError} from
+\texttt{EmtProblemDae.\_validate\_connections}, containing:\\
+\texttt{Floating bus phases detected}\newline
+\texttt{(each phase must be connected to at least 2 elements)}\newline
+The detailed message lists phases A, B and C of \texttt{SARGENTS}, each
+connected to one \texttt{branch\_to} entry. Device UUIDs may vary on import.
+\end{enumerate}
+
+A separate synthetic two-bus case is included in the same script:\\
+\verb|python reproduce.py --minimal --out minimal.json|\newline
+It uses a source bus with one generator and a single PI line to an unloaded
+terminal. It is not a modified version of the attached IEEE network.
+Both commands reproduced the rejection through the public constructor;
+both power flows converged in each case.
+
+\section*{Expected behavior}
+A terminal should not be declared electrically floating solely because one
+external device is connected, if that device's internal equations determine
+the terminal voltage. Please check whether the connectivity rule should account
+for PI-line terminal capacitance, or document the additional model requirement
+if this topology is intentionally unsupported.
+
+We do not expect the removal of all checks on single-device terminals, and
+we do not claim that passing this check proves successful initialization or
+stability of the complete dynamic model.
+
+\section*{Screenshots}
+Not applicable: this is a Python API reproduction. The attached JSON outputs
+contain the numerical checks and exact exception text.
+
+\section*{Desktop (please complete the following information)}
+\begin{itemize}
+\item OS: Red Hat Enterprise Linux 9.6, x86\_64, on MareNostrum 5.
+\item Engine version: \texttt{VeraGridEngine 6.7.0}, development checkout:\\
+\texttt{CITCEA-UPC/VeraGrid\_TenSyGrid}, commit:\\
+\texttt{2692754f16a097c9b387b8b5741ae8ebc87efd52}.
+\item Python 3.12.1; NumPy 2.5.3; SciPy 1.18.1.
+The engine checkout was clean when tested.
+\end{itemize}
+
+\section*{Additional context}
+The affected bus has no active generator, load or independent shunt. The
+original line parameters are $R=0.00866$, $X=0.0454$ and $B=0.01178$ pu.
+The engine's line mapping gives a full-rank terminal capacitance matrix
+$C=1.874845229622527\times10^{-5}I_3$ in its EMT per-unit convention
+(not SI farads).
+
+The PI template includes $q_t=Cv_t$ and
+$i_t=-i_{\mathrm{series}}+i_{\mathrm{cap},t}$.
+At an unloaded terminal, KCL gives $i_t=0$, so
+$C\dot v_t=i_{\mathrm{series}}$ for the stated orientation.
+This motivates checking the device-count rule; it is not a full-network
+DAE rank or initialization proof.
+
+The reproduction uses standard generator, series-transformer, PI-line,
+RL-load and constant-impedance shunt templates. PI-line numerical damping
+conductance is zero. It neither patches the validator nor runs time integration
+or eigenvalue analysis. A fix should retain detection of genuinely unsupported
+or disconnected phases.
+
+\end{document}

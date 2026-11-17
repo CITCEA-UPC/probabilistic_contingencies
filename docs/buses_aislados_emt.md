@@ -474,3 +474,91 @@ aclararse el alcance del estudio. No se obtuvieron conclusiones sobre
 estabilidad de ese experimento y no se cambió la BD original ni el motor.
 La eliminación de la recuperación automática por OPF afecta solo al
 pipeline del proyecto; no introduce una corrección en VeraGrid.
+
+
+## 9. IEEE 118: extremo SARGENTS y rechazo previo al análisis modal
+
+Diagnóstico iniciado el 17 de noviembre de 2026. No se cambia la red ni el
+criterio del motor durante esta reproducción.
+
+### Dos barreras distintas
+
+1. `contingencies/contingency.py:get_buses_with_few_connections` detecta
+   SARGENTS y devuelve `isolated_buses` después del PF balanceado. No se
+   llega al PF trifásico ni a construir el DAE.
+2. `EmtProblemDae._validate_connections` impone independientemente un mínimo
+   de dos dispositivos conectados por fase. El nombre del error es
+   `Floating bus phases detected`. El contador guarda una entrada por
+   dispositivo, no por elemento eléctrico interno del modelo de ese dispositivo.
+
+El caso base ya tiene esa condición. Aumentar los recursos, cambiar el batch
+size o repetir contingencias no la resuelve.
+
+### Datos originales y modelo PI
+
+En `IEEE118busNREL.raw`, el bus 73 es SARGENTS. Su única rama activa es
+`71_73_1`, con R=0.00866, X=0.0454 y B=0.01178 pu. No tiene generador,
+carga ni shunt independiente activos. La susceptancia de la propia línea
+no es cero y no equivale a añadir un dispositivo artificial.
+
+El template `pi_line_emt_template.py` incluye los estados de carga de los
+condensadores terminales y las relaciones `q=C*v`. En el extremo receptor,
+el modelo impone `i_terminal=-i_serie+i_capacitivo`. KCL en un extremo sin
+inyección externa exige `i_terminal=0`, de donde
+`i_capacitivo=i_serie`. Si C es invertible, la tensión terminal puede evolucionar
+según `C*dv/dt=i_serie`: tener una sola rama no demuestra que esa tensión
+quede indeterminada. La matriz concreta de C debe comprobarse en la importación.
+
+Esto señala una posible restricción excesiva del validador, no demuestra
+por sí solo que todo el DAE de 118 buses se inicialice o tenga rango completo.
+Tampoco justifica cambiar globalmente `<2` por `<1`: otros dispositivos y
+terminales pueden requerir tratamientos distintos.
+
+### Reproducción acotada
+
+`validation/emt_topology.py` carga el caso base original, ejecuta PF y PF3,
+recoge R/L/C del mapeo utilizado por EMT, adjunta los mismos modelos del
+pipeline e invoca **el validador original** en un contexto mínimo. No compila
+ni integra todo el DAE, no relaja validaciones y no modifica bases de datos.
+
+```bash
+python -m validation.emt_topology \
+  --grid stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw \
+  --out outputs/validation/ieee118_emt_topology/base_case.json
+```
+
+Se ha enviado el job pequeño `49161241`, `gp_debug`, un nodo, 15 minutos.
+Script y logs en `outputs/validation/ieee118_emt_topology/`. Consultar el JSON
+y el estado del job antes de afirmar sus resultados. La falta de resultado
+modal sigue siendo `unknown` salvo otra condición de fallo observada.
+
+### Comprobación siguiente necesaria
+
+Si el validador rechaza el caso aun con capacitancia terminal de rango completo,
+trasladar a los desarrolladores una reproducción con los parámetros y el error.
+Una corrección debería reconocer modelos de terminal bien determinados y
+seguir rechazando fases realmente desconectadas. Tras esa corrección deben
+comprobarse construcción, inicialización, convergencia, cierre periódico y
+modos del caso base, antes de reanudar el catálogo completo.
+
+
+Resultado de `49161241`: prueba completada; PF y PF3 convergen, una isla
+con 118 buses, slack MUSKNGUM sin cambios. El validador original rechaza
+únicamente las tres fases de SARGENTS por tener una rama. La matriz C
+terminal calculada por el mapeo real es diagonal con tres entradas
+`1.874845229622527e-05`, estrictamente positivas y de rango completo.
+Estos valores son del contrato por unidad EMT del motor, no faradios SI.
+R es diagonal `0.00866` y L diagonal `0.00014451268832744099`.
+El diagnóstico requiere ~14 s de cálculo (sin incluir arranque de Slurm).
+El JSON está en `outputs/validation/ieee118_emt_topology/base_case.json`.
+Se confirma el bloqueo por el contador, no un fallo del PF ni una contingencia
+concreta. Queda pendiente la comprobación del DAE completo tras una corrección
+justificada del validador; no se ha omitido ninguna validación.
+
+
+Paquete autocontenido preparado en `bug/`, con informe inglés LaTeX/PDF,
+RAW original, script y resultados. El nuevo job `49161934` comprobó el
+**constructor público** `build_emt_problem` tanto en el 118 como en un caso
+sintético independiente de dos buses: ambos reproducen el mismo rechazo,
+con PF/PF3 convergidos y C terminal de rango 3. No se ha ejecutado integración
+ni análisis modal. Esto amplía la prueba anterior del validador aislado.

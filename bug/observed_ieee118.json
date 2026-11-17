@@ -1,0 +1,71 @@
+{
+  "case": "IEEE118busNREL.raw",
+  "environment": {
+    "os": "Linux-5.14.0-687.25.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "os_release": {
+      "NAME": "Red Hat Enterprise Linux",
+      "ID": "rhel",
+      "PRETTY_NAME": "Red Hat Enterprise Linux 9.6 (Plow)",
+      "VERSION": "9.6 (Plow)",
+      "ID_LIKE": "fedora",
+      "VERSION_ID": "9.6",
+      "PLATFORM_ID": "platform:el9",
+      "ANSI_COLOR": "0;31",
+      "LOGO": "fedora-logo-icon",
+      "CPE_NAME": "cpe:/o:redhat:enterprise_linux:9::baseos",
+      "HOME_URL": "https://www.redhat.com/",
+      "DOCUMENTATION_URL": "https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9",
+      "BUG_REPORT_URL": "https://issues.redhat.com/",
+      "REDHAT_BUGZILLA_PRODUCT": "Red Hat Enterprise Linux 9",
+      "REDHAT_BUGZILLA_PRODUCT_VERSION": "9.6",
+      "REDHAT_SUPPORT_PRODUCT": "Red Hat Enterprise Linux",
+      "REDHAT_SUPPORT_PRODUCT_VERSION": "9.6"
+    },
+    "python": "3.12.1",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "VeraGridEngine": "6.7.0"
+  },
+  "size": {
+    "buses": 118,
+    "lines": 175,
+    "generators": 53,
+    "transformers2w": 11
+  },
+  "stage": "build_emt_problem",
+  "grid_sha256": "5d0f3d1ccbb641e7c7f75fb71eb7f9ce42d5d50bb658137e4449fb03e84c0882",
+  "balanced_pf_converged": true,
+  "three_phase_pf_converged": true,
+  "terminal": {
+    "bus": "SARGENTS",
+    "line": "71_73_1",
+    "R_pu": 0.00866,
+    "X_pu": 0.0454,
+    "B_pu": 0.01178,
+    "C_terminal_emt_pu": [
+      [
+        1.874845229622527e-05,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.874845229622527e-05,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.874845229622527e-05
+      ]
+    ],
+    "C_rank": 3,
+    "active_branches": 1,
+    "active_injections": 0
+  },
+  "outcome": "original topology rejection reproduced",
+  "exception_type": "EmtTopologyError",
+  "error": "TopologyError: Floating bus phases detected (each phase must be connected to at least 2 elements):\n  - Bus 'SARGENTS' phase 'v_A' is floating (connected to 1 element(s): {'branch_to:35bfab95973c44a2928c57f97aef999d'})\n  - Bus 'SARGENTS' phase 'v_B' is floating (connected to 1 element(s): {'branch_to:35bfab95973c44a2928c57f97aef999d'})\n  - Bus 'SARGENTS' phase 'v_C' is floating (connected to 1 element(s): {'branch_to:35bfab95973c44a2928c57f97aef999d'})",
+  "slack_assignments_unchanged": true,
+  "elapsed_s": 14.775887274183333
+}
