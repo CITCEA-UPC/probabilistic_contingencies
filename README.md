@@ -13,17 +13,17 @@ risk_analysis.py        Informes de risc de tota la BD
 modal_analysis.py       Inspecció dels modes d’una contingència
 contingencies/          Càlcul, persistència del mestre, diagnòstics i dummies
 tests/                  Proves sense simulacions EMT
+validation/             Verificació numèrica i cas base del 118
+bug/                    Reproducció autònoma de la incidència EMT
 docs/                   Teoria, notes BSC i diagnòstics tècnics
 outputs/                BD, gràfics, logs i perfils generats
 paper/                  Manuscrit i figures del paper
-legacy/                 Versions i eines antigues conservades
 grids/                  Xarxes d’entrada addicionals
-datagen/                Generació de dades
 VeraGrid_TenSyGrid/      Submòdul del motor
 stability_analysis/     Submòdul amb eines i dades addicionals
 ```
 
-Els submòduls mantenen la seva ubicació. El codi de `legacy/` conserva les referències històriques i no forma part del pipeline actual.
+Els submòduls mantenen la seva ubicació. Les carpetes antigues `datagen/` i `legacy/` s’han eliminat; les versions anteriors continuen a l’historial de Git.
 
 ## Entorn local
 

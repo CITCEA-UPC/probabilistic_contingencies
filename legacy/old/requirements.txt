@@ -1,5 +1,0 @@
-numpy==2.2.6
-pandas==2.3.2
-control==0.10.1
-memory_profiler
-PyYaml
