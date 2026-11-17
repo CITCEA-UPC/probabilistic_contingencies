@@ -392,3 +392,85 @@ espectro completo.
 
 Con `--no-show` se imprime la tabla sin abrir ventanas ni requerir matplotlib;
 si además se pide `--save`, se genera el plano s con el backend Agg.
+
+## 8. Incidencias reproducibles para consultar con VeraGrid (17-11-2026)
+
+El estudio mantiene la red de entrada y únicamente desactiva los elementos
+de la contingencia. No se reasigna el slack, no se cambian consignas y no
+se busca un redespliegue de generación mediante OPF. El código del motor
+no se ha modificado. Las descripciones antiguas de este documento sobre
+singularidad o aislamiento deben interpretarse con la distinción de la
+sección 2.7 de [teoria.md](teoria.md).
+
+### 8.1 Inyección en el slack con su generador desactivado
+
+**Red y versión:** `IEEE 9 Bus.gridcal`, submódulo VeraGrid en
+`2692754f16a097c9b387b8b5741ae8ebc87efd52`.
+
+**Única modificación de los datos eléctricos:**
+`grid.generators[0].active = False` (contingencia 109 de nuestra BD).
+El bus 0 conserva `is_slack=True` tal como viene en el fichero.
+No tiene cargas, shunts ni otros generadores activos. Permanece conectado
+al bus 3 mediante `branch 0` (`R=0`, `X=0.0576`, `B=0`).
+
+**Resultado observado:** el PF balanceado y el trifásico indican convergencia,
+pero el balanceado devuelve `Sbus[0] ≈ 71.7866817 + j10.1725392 MVA`.
+El trifásico atribuye aproximadamente `23.9288956 + j3.3908533 MVA` a cada
+fase de ese bus. Con el generador fuera, ese punto de funcionamiento
+incluye una inyección para la que no hay un dispositivo activo en el bus.
+
+**Consulta al motor:** ¿el contrato de `active=False` debe retirar también
+la capacidad de inyección de ese bus aunque su flag de referencia permanezca?
+Si el slack del PF representa una fuente ideal independiente del generador,
+¿cómo debe indicar el motor que esa solución convergida no representa la
+contingencia solicitada? El pipeline conserva el flag y no lo corrige
+manualmente. Esto es un comportamiento reproducido que requiere confirmar
+con los desarrolladores si es un bug o una convención del modelo de slack.
+
+### 8.2 Rechazo EMT de un terminal conectado a una sola rama
+
+En el mismo caso, hay una sola isla de nueve buses. El bus 0 tiene una
+única rama activa y ninguna inyección activa. La validación de
+`EmtProblemDae._validate_connections` rechaza sus fases A/B/C porque cada
+una cuenta una conexión, por debajo del mínimo de dos.
+
+**Consulta al motor:** ¿cómo se representa, sin dispositivos artificiales ni
+cambios de topología, un terminal abierto conectado mediante una línea o
+un transformador? El criterio de cardinalidad por sí solo no demuestra
+singularidad; se necesita confirmar qué restricciones impone el solver
+sobre las ecuaciones de ese terminal. La rama del caso concreto no tiene
+susceptancia shunt, por lo que tampoco se presupone que la excepción pueda
+eliminarse sin más y que el DAE resultante sea resoluble.
+
+**Reproducción mínima de ambos comportamientos**, desde la raíz del repo:
+
+```python
+import config
+from contingencies import contingency as ct
+from VeraGridEngine.basic_structures import Logger
+from VeraGridEngine.Simulations.EMT.emt_options import EmtOptions
+from VeraGridEngine.Simulations.EMT.problems.emt_problem_dae import EmtProblemDae
+
+grid = ct.vge.open_file(config.GRID_PATH)  # configurar IEEE 9 Bus.gridcal
+assert grid.generators[0].bus is grid.buses[0]
+assert grid.buses[0].is_slack
+grid.generators[0].active = False
+
+pf = ct.vge.power_flow(grid)
+pf3 = ct.vge.power_flow3ph(grid)
+print(pf.converged, pf.Sbus[0])
+print(pf3.converged, pf3.Sbus_A[0], pf3.Sbus_B[0], pf3.Sbus_C[0])
+print(ct.get_islands_info(grid))  # (1, [9])
+
+ct.attach_emt_models(grid)
+# La construcción se detiene en la validación, antes de la simulación:
+EmtProblemDae(grid=grid, options=EmtOptions(), pf_results=pf,
+              pf_results_3ph=pf3, logger=Logger())
+```
+
+Se había enviado el experimento aislado `49157034` a `gp_debug`, que
+modificaba el slack en memoria para investigar el DAE. Se canceló al
+aclararse el alcance del estudio. No se obtuvieron conclusiones sobre
+estabilidad de ese experimento y no se cambió la BD original ni el motor.
+La eliminación de la recuperación automática por OPF afecta solo al
+pipeline del proyecto; no introduce una corrección en VeraGrid.

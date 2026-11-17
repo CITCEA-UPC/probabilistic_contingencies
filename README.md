@@ -1,6 +1,6 @@
 # Probabilistic contingencies
 
-Pipeline de contingències N−1/N−2 per a xarxes elèctriques amb VeraGrid: fluxos de potència, recurs a OPF, comprovació EMT, modes de Floquet i anàlisi de vulnerabilitat amb casos desconeguts explícits.
+Pipeline de contingències N−1/N−2 per a xarxes elèctriques amb VeraGrid: fluxos de potència, comprovació EMT, modes de Floquet i anàlisi de vulnerabilitat amb casos desconeguts explícits.
 
 ## Estructura
 
@@ -40,6 +40,8 @@ python -m pip install matplotlib
 `config.py` incorpora el codi del submòdul a `sys.path`. No cal instal·lar PyCOMPSs per treballar en local: el llançador força els dummies i executa les tasques en sèrie.
 
 Selecciona `GRID_NAME` i `GRID_PATH` a `config.py`. La BD es deriva del nom de la xarxa i es desa a `outputs/databases/`.
+
+L’estudi manté les dades de la xarxa i només desactiva els elements de cada contingència. El pipeline no reassigna l’slack, no modifica les consignes i no intenta recuperar la convergència amb OPF ni redespatx. Si un càlcul no convergeix o el motor rebutja la topologia, es desa el diagnòstic disponible. Les columnes `opf_needed` i `opf_converged` es mantenen per compatibilitat amb BD històriques; els càlculs nous no executen OPF.
 
 ## Execució local
 
@@ -122,6 +124,8 @@ Es poden regenerar els informes sense executar simulacions:
 python risk_analysis.py
 python risk_analysis.py --db outputs/databases/results_IEEE_9_Bus.db
 ```
+
+El criteri de risc considera perillosa la no-convergència del PF balancejat o trifàsic, a més de la formació d’illes i la inestabilitat modal. Un terminal rebutjat per EMT conserva el diagnòstic de risc si el PF balancejat ja ha retornat no-convergència. Les excepcions que no permeten establir el resultat del PF continuen sent desconegudes.
 
 Per defecte, cada parella N−2 es compta una sola vegada. `--n2-counting rows` permet comparar amb el comptatge històric per files. Els casos sense diagnòstic són desconeguts; es mostren cobertura i límits de risc brut, sense un rànquing definitiu.
 

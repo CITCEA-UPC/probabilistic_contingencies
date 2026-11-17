@@ -78,7 +78,7 @@ def print_summary(row, eigenvalues):
     print(f"Contingència {row['contingency_id']} — {row['grid_name']}")
     print(f"  lines={row['lines']} generators={row['generators']} transformers={row['transformers']} level={row['level']}")
     print(f"  status={row.get('status')} stable (BD)={format_bool(row.get('stable'))} errors={format_bool(row.get('errors'))}")
-    print(f"  PF convergit={format_bool(row.get('powerflow_converged'))} OPF necessari={format_bool(row.get('opf_needed'))} OPF convergit={format_bool(row.get('opf_converged'))}")
+    print(f"  PF convergit={format_bool(row.get('powerflow_converged'))} OPF intentat (llegat)={format_bool(row.get('opf_needed'))} OPF convergit={format_bool(row.get('opf_converged'))}")
     print(f"  Topologia: {topology_description(row)}")
     print(f"  Busos rebutjats pel filtre EMT (camp isolated_buses): {row.get('isolated_buses')}")
     print(f"  Diagnòstic per al risc: {diagnosis} ({reason})")

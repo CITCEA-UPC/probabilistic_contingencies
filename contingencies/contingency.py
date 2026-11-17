@@ -15,11 +15,11 @@ El flux d'una contingència (vegeu ``docs/buses_aislados_emt.md``):
   1. Carrega el grid i aplica la contingència (desactiva línies, generadors i
      transformadors indicats).
   2. Classifica la topologia post-contingència: compta les illes i detecta
-     busos aïllats (<2 connexions actives). Amb busos aïllats el problema
-     nodal EMT és singular i la simulació s'omet (no és un error: és un
-     resultat vàlid, ``status='isolated_buses'``).
-  3. Power flow balancejat (amb fallback a OPF) i, només si l'EMT és viable,
-     el trifàsic. Si no convergeixen, es classifica i s'atura.
+     busos amb menys de 2 connexions actives. El motor EMT rebutja aquests
+     terminals; es classifiquen amb ``status='isolated_buses'``, que no
+     demostra per si sol aïllament físic ni inestabilitat.
+  3. Power flow balancejat i, només si l’EMT és viable, el trifàsic.
+     Si no convergeixen, es classifica i s’atura, sense OPF ni canvi d’slack.
   4. Si tot és viable, adjunta els models EMT, executa un transitori curt de
      comprovació numèrica i calcula els autovalors de Floquet dominants. El
      veredicte d'estabilitat és modal (``max(Re lambda) <= 0``).
@@ -76,15 +76,15 @@ STATUS_OK = "ok"
 """Calculada completament (PF balancejat + PF trifàsic + EMT). `stable` indica el resultat."""
 
 STATUS_ISOLATED_BUSES = "isolated_buses"
-"""La contingència deixa busos amb <2 connexions actives. El problema nodal EMT
-seria singular (floating phases) i no se simula. Es desa islands=1, errors=0."""
+"""El recompte de connexions rebutja algun terminal per a EMT. No prova
+singularitat ni aïllament físic; islands es deriva de n_islands, errors=0."""
 
 STATUS_PF_NOT_CONVERGED = "pf_not_converged"
 """El power flow balancejat no ha convergit; no es pot executar l'EMT."""
 
 STATUS_PF3_NOT_CONVERGED = "pf3_not_converged"
-"""El power flow trifàsic no ha convergit; l'EMT s'inicialitzaria amb una
-solució no vàlida i per això s'omet (mateix criteri que els exemples del
+"""El power flow trifàsic no ha convergit; no es disposa d’una solució
+certificada per inicialitzar l’EMT i per això s’omet (mateix criteri que els exemples del
 motor a VeraGrid_TenSyGrid/src/TensyGridEngine/emt)."""
 
 STATUS_PF3_ERROR = "pf3_error"
@@ -130,10 +130,10 @@ def get_buses_with_few_connections(grid):
 
     El constructor del problema EMT (EmtProblemDae._validate_connections)
     exigeix que cada fase de cada bus estigui connectada a com a mínim 2
-    elements amb model EMT. Un bus amb 0 o 1 connexions té la tensió de fase
-    indefinida a l'anàlisi nodal (KCL singular: una única injecció de corrent
-    sense camí d'admitància) i el motor llença EmtTopologyError ("Floating
-    bus phases detected").
+    elements amb model EMT. Un bus amb 0 o 1 connexions queda
+    rebutjat pel recompte del validador del motor, que llença
+    EmtTopologyError ("Floating bus phases detected"). Aquest recompte no
+    demostra per si sol aïllament físic ni singularitat matemàtica.
 
     El criteri de recompte replica exactament el conjunt de dispositius als
     quals `attach_emt_models` adjunta models EMT:
@@ -514,10 +514,9 @@ def calculate_contingency(contingency):
       1. Carrega el grid i aplica la contingència (desactiva línies,
          generadors i transformadors indicats).
       2. Classifica la topologia post-contingència: compta les illes i
-         detecta busos aïllats (menys de 2 connexions actives). Amb busos
-         aïllats el problema nodal EMT és singular (fases flotants) i la
-         simulació s'omet: no és un error del càlcul sinó un resultat
-         vàlid (el bus queda desconnectat de la xarxa).
+         detecta els busos amb menys de 2 connexions actives que el motor
+         EMT rebutja. Es classifiquen sense afirmar singularitat matemàtica
+         ni aïllament físic; el nombre d’illes es desa separadament.
       3. Executa el power flow balancejat i, només si l'EMT és viable, el
          trifàsic (amb try/except per un bug conegut del motor a
          apply_from_island). Si algun no convergeix, no s'executa l'EMT
@@ -542,7 +541,8 @@ def calculate_contingency(contingency):
     tic = time.perf_counter()
     grid = vge.open_file(resolve_grid_path(contingency["grid_path"]))
 
-    # Aplicar la contingència: desactivar els elements indicats.
+    # Únic canvi sobre les dades elèctriques: desactivar els elements indicats.
+    # Es mantenen slack, consignes i paràmetres tal com venen al fitxer.
     for line_id in ast.literal_eval(contingency["lines"]):
         grid.lines[line_id].active = False
     for gen_id in ast.literal_eval(contingency["generators"]):
@@ -559,13 +559,9 @@ def calculate_contingency(contingency):
     # omple el camp powerflow_converged fins i tot en els casos degenerats.
     pf_results = vge.power_flow(grid)
 
-    # Estat del fallback a optimal power flow. Només s'activa si el PF
-    # balancejat no convergeix (vegeu el "Cas 2" més avall); en cas contrari
-    # opf_needed roman False i opf_converged NULL.
-    opf_needed = False
-    opf_converged = None
-    opf_results = None
-    opf_error = None
+    # L’estudi conserva la configuració de la xarxa: només desconnecta els
+    # elements indicats. No reassigna l’slack ni busca un altre despatx amb OPF.
+    # Les columnes OPF es mantenen per llegir les BD de versions anteriors.
 
     def make_result(status, stable=False, errors=False, error_message=None, eigenvalues=None):
         """
@@ -589,11 +585,11 @@ def calculate_contingency(contingency):
             "eigenvalues": None if eigenvalues is None else json.dumps(
                 [[float(z.real), float(z.imag)] for z in eigenvalues]
             ),
-            "opf_needed": opf_needed,
-            "opf_converged": opf_converged,
+            "opf_needed": False,
+            "opf_converged": None,
         }
 
-    # Cas 1: busos aïllats. L'EMT no pot simular aquesta topologia
+    # Cas 1: terminals rebutjats pel recompte de connexions del motor EMT
     # (EmtTopologyError "Floating bus phases detected"). Es classifica i
     # s'ometen el PF trifàsic i l'EMT; no es compta com a error del procés.
     # A més, evitar el PF trifàsic en xarxes amb illes esquiva un bug del
@@ -601,37 +597,10 @@ def calculate_contingency(contingency):
     if isolated_bus_names:
         return make_result(STATUS_ISOLATED_BUSES)
 
-    # Cas 2: el power flow balancejat no ha convergit. Abans de rendir-nos,
-    # provem l'optimal power flow (LINEAR_OPF per defecte): si troba un
-    # despatch factible, el fem servir per re-sembrar el power flow i, si
-    # aquest ara convergeix, continuem amb la resta de passes. Registrem
-    # opf_needed/opf_converged per poder distingir a modal_analysis.py els casos
-    # "viable amb re-despatch" dels que no han convergit de cap manera.
+    # Cas 2: no convergeix el punt de funcionament post-contingència.
+    # No s’intenta recuperar-lo amb redespatx ni amb un altre bus slack.
     if not pf_results.converged:
-        opf_needed = True
-        try:
-            opf_driver = vge.OptimalPowerFlowDriver(grid=grid)
-            opf_driver.run()
-        except Exception as exc:
-            # Qualsevol error de l'OPF es tracta com si no hagués convergit.
-            opf_converged = False
-            opf_error = f"{type(exc).__name__}: {exc}"
-        else:
-            opf_converged = bool(opf_driver.results.converged)
-            if opf_converged:
-                opf_results = opf_driver.results
-                try:
-                    pf_driver = vge.PowerFlowDriver(grid=grid, opf_results=opf_results)
-                    pf_driver.run()
-                    pf_results = pf_driver.results
-                except Exception as exc:
-                    opf_error = f"PF re-sembrat: {type(exc).__name__}: {exc}"
-
-    if not pf_results.converged:
-        return make_result(
-            STATUS_PF_NOT_CONVERGED,
-            error_message=opf_error,
-        )
+        return make_result(STATUS_PF_NOT_CONVERGED)
 
     # Cas 3: power flow trifàsic (només quan hi ha oportunitat de fer EMT,
     # perquè l'EMT s'inicialitza des d'aquesta solució). Es captura qualsevol
@@ -639,14 +608,7 @@ def calculate_contingency(contingency):
     # que llença IndexError quan la mida dels arrays de branca no és
     # múltiple de 4 (p. ex. una illa amb 7 branques: Sf = 7x3 = 21).
     try:
-        if opf_results is not None:
-            # Si venim del fallback OPF, re-sembrem també el trifàsic amb el
-            # despatch de l'OPF per millorar-ne la convergència.
-            pf3_driver = vge.PowerFlowDriver3Ph(grid=grid, opf_results=opf_results)
-            pf3_driver.run()
-            pf_results_3 = pf3_driver.results
-        else:
-            pf_results_3 = vge.power_flow3ph(grid)
+        pf_results_3 = vge.power_flow3ph(grid)
     except Exception as exc:
         return make_result(
             STATUS_PF3_ERROR,

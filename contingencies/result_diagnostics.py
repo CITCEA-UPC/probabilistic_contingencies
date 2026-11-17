@@ -27,13 +27,21 @@ def parse_eigenvalues(raw):
 
 
 def classify(row):
-    """(failure/stable/unknown, motiu); una fallada numèrica no prova fallada física."""
+    """Diagnòstic de risc segons el criteri adoptat: PF no convergit implica failure."""
     status = row.get("status")
     if status == "pending":
         return "unknown", "pending"
     n_islands = row.get("n_islands")
     if (n_islands is not None and n_islands > 1) or (n_islands is None and row.get("islands") == 1):
         return "failure", "islanding"
+    if status in {"pf_not_converged", "pf3_not_converged"}:
+        return "failure", status
+    # El PF balancejat s’executa abans del filtre EMT. El seu resultat real
+    # continua sent un criteri de risc encara que després es rebutgi el terminal.
+    if status == "isolated_buses" and row.get("powerflow_converged") == 0:
+        return "failure", "pf_not_converged"
+    # En canvi, exception utilitza False com a valor de reserva: no acredita
+    # que s’hagi arribat a executar el PF ni que aquest hagi retornat no-convergència.
     if status != "ok":
         return "unknown", status or "missing_status"
     if row.get("errors"):

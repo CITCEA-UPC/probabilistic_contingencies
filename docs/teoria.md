@@ -44,12 +44,14 @@ En lloc de calcular la probabilitat conjunta de fallada (que requereix MTTR), pr
 
 ### 2.3 Definicions
 
+**Abast de la contingència.** La xarxa d’entrada defineix la configuració de referència. Només es desactiven els elements seleccionats (línies, generadors i transformadors); el pipeline no reassigna l’slack, no canvia consignes i no executa OPF per buscar un nou despatx. Els models EMT s’adjunten per representar els dispositius actius, sense afegir càrregues, fonts o amortiments per superar les comprovacions de topologia. Si el motor no admet el cas, es conserva la limitació com a diagnòstic. La no-convergència no es corregeix canviant la xarxa.
+
 **Severitat binària per als casos amb diagnòstic concloent:**
 
 $$S_c = \begin{cases} 1 & \text{si la contingència } c \text{ causa fallada del sistema} \\ 0 & \text{altrament} \end{cases}$$
 
 On "fallada del sistema" es defineix com qualsevol de:
-- Inviabilitat del punt de funcionament segons les restriccions adoptades. La no-convergència numèrica del PF o de l’OPF, per si sola, no prova aquesta inviabilitat (secció 2.7).
+- No-convergència del PF balancejat o trifàsic. S’adopta directament com a criteri de risc de la contingència: la situació no s’ha pogut resoldre amb el procediment previst, sense modificar slack ni despatx.
 - Inestabilitat de petit senyal (almenys un autovalor amb part real $\geq 0$)
 - Formació d'illes elèctriques
 
@@ -158,7 +160,7 @@ Per tant, tenir menys de dues connexions amb model EMT **no demostra per si sol 
 
 Dels 24 casos `ok`, 18 també tenen dues illes i 6 mantenen una sola illa. L’estabilitat modal desada no elimina la fragmentació: segons el criteri adoptat, els primers continuen tenint severitat 1.
 
-Dels 45 casos connectats, 37 tenen PF balancejat convergit i 8 no. En aquests darrers, el retorn anticipat per topologia evita provar el recurs a OPF; aquesta execució no permet concloure que el redespatch sigui inviable.
+Dels 45 casos connectats, 37 tenen PF balancejat convergit i 8 no. En l’execució històrica, el retorn anticipat per topologia va evitar el recurs a OPF que existia aleshores. Amb el criteri actual no s’intenta redespatx; aquests resultats no demostren per si sols inviabilitat física.
 
 En la revisió en memòria del validador real `EmtProblemDae._validate_connections`, els casos 109, 121 i 133 (desconnexió d’un generador) mantenen una única illa de 9 busos, però el motor rebutja, respectivament, els busos 0, 1 i 2 per tenir una sola connexió per fase. El cas 13 supera la validació. Aquesta comprovació valida el motiu del rebuig; no és una simulació dinàmica dels casos descartats.
 
@@ -171,11 +173,11 @@ Abans d’interpretar els índexs com a vulnerabilitat física, cal:
 3. Informar de la cobertura de l’avaluació, global i per element, distingint casos pendents, errors i limitacions de model dels diagnòstics concloents.
 4. Evitar que els casos desconeguts entrin automàticament com a fallades o com a casos sans. Si es vol quantificar-ne l’efecte, es poden donar límits inferior i superior del risc brut assignant-los, respectivament, severitat 0 i 1, amb els mateixos pesos i la mateixa convenció de comptatge N−2. Aquests límits expressen incertesa; no resolen els casos desconeguts. La normalització per un màxim global variable requereix una anàlisi separada i no preserva necessàriament aquests límits.
 
-**Aplicació a `risk_analysis.py`.** El postprocessament aplica aquesta separació sense modificar la BD de simulació. La fragmentació (`n_islands > 1`) determina fallada segons el criteri adoptat. Un cas `ok` amb autovalors finits per sobre del llindar real de `1e-6` determina inestabilitat modal; un cas `ok`, sense errors, amb `stable=1` i autovalors finits dins del llindar es considera estable segons l’anàlisi calculada. Si `stable=0` però els modes no indiquen inestabilitat, el diagnòstic queda desconegut perquè el camp també pot reflectir fallada numèrica del transitori EMT. Els errors, la no-convergència i les limitacions topològiques sense fragmentació queden desconeguts.
+**Aplicació a `risk_analysis.py`.** El postprocessament aplica aquesta separació sense modificar la BD de simulació. La fragmentació (`n_islands > 1`) determina fallada segons el criteri adoptat. Un cas `ok` amb autovalors finits per sobre del llindar real de `1e-6` determina inestabilitat modal; un cas `ok`, sense errors, amb `stable=1` i autovalors finits dins del llindar es considera estable segons l’anàlisi calculada. Si `stable=0` però els modes no indiquen inestabilitat, el diagnòstic queda desconegut perquè el camp també pot reflectir fallada numèrica del transitori EMT. La no-convergència del PF balancejat o trifàsic determina severitat 1 segons el criteri de risc adoptat. Això també s’aplica a `isolated_buses` quan `powerflow_converged=0`, perquè el PF balancejat s’ha executat abans del filtre EMT. Les excepcions del càlcul i les limitacions topològiques sense fragmentació ni no-convergència observada continuen desconegudes; el False de reserva d’una `exception` no és una no-convergència mesurada.
 
 Els CSV inclouen límits N−1, N−2 i totals, cobertura de diagnòstic per recompte i ponderada pels mateixos pesos del risc, i el segon element crític per a cadascun dels dos extrems. Aquest segon element és condicional a l’assignació dels desconeguts, no una identificació definitiva. Els gràfics mostren el risc brut confirmat i el marge addicional dels desconeguts, sense normalitzar ni presentar un rànquing definitiu. `scenarios.csv` conserva els IDs d’origen i el motiu del diagnòstic; `summary.json` registra pesos, llindar, cobertura i convenció N−2.
 
-Amb el comptatge únic sobre aquesta BD, `risk_analysis.py` obté 78 escenaris: 48 amb fragmentació (fallada segons el criteri adoptat), 6 estables sense fragmentació i 24 desconeguts. La cobertura de diagnòstic global és del 69,2%; per als generadors és del 25%.
+Amb el criteri anterior que deixava tota no-convergència com a desconeguda, aquesta BD donava 78 escenaris: 48 amb fragmentació, 6 estables i 24 desconeguts (cobertura del 69,2%). Aquests recomptes són històrics. Amb el criteri actual que assigna severitat 1 a la no-convergència observada del PF, els informes regenerats donen **52 escenaris perillosos, 6 estables i 20 desconeguts**, amb una cobertura del **74,4%**. Els quatre escenaris addicionals de risc tenen un PF balancejat no convergit, encara que constin com a `isolated_buses` per l’ordre de classificació del pipeline.
 
 **Integració al pipeline.** `main.py` genera automàticament els informes de risc al mestre després de `compss_wait_on`, tant amb `pycompss_mn.sh` com amb `local_exec.sh`. `--skip-risk` omet aquesta etapa i `--risk-out` selecciona la carpeta de sortida. `--preprocess` només genera la BD. L’informe sempre cobreix tota la BD, també després de calcular només alguns IDs; els casos pendents continuen desconeguts. Si no queden contingències per processar, els informes es regeneren igualment. La sortida per defecte és `outputs/plots/risk_analysis/<nom de la BD>/`. Si falla la generació dels informes, l’error es propaga i els resultats de simulació ja desats es conserven.
 

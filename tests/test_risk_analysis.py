@@ -35,11 +35,28 @@ class RiskTests(unittest.TestCase):
         r["n_islands"] = 2
         self.assertEqual(risk.classify(r), ("failure", "islanding"))
 
-    def test_numerical_failures_and_pending_are_unknown(self):
+    def test_exceptions_and_pending_are_unknown(self):
         for status in ("pending", "exception", "pf3_error", "emt_topology_error",
-                       "small_signal_error", "pf_not_converged", "pf3_not_converged", "other"):
+                       "small_signal_error", "other"):
             with self.subTest(status=status):
                 self.assertEqual(risk.classify(row(1, [A], status=status))[0], "unknown")
+
+    def test_nonconverged_pf_is_a_risk_for_both_solvers(self):
+        for status in ('pf_not_converged','pf3_not_converged'):
+            with self.subTest(status=status):
+                self.assertEqual(risk.classify(row(1,[A],status=status)),('failure',status))
+
+    def test_actual_pf_failure_is_retained_when_emt_filter_rejects_terminal(self):
+        r = row(1,[A],status='isolated_buses',powerflow_converged=0)
+        self.assertEqual(risk.classify(r),('failure','pf_not_converged'))
+        r['powerflow_converged'] = 1
+        self.assertEqual(risk.classify(r),('unknown','isolated_buses'))
+        r['powerflow_converged'] = None
+        self.assertEqual(risk.classify(r),('unknown','isolated_buses'))
+
+    def test_exception_fallback_does_not_claim_observed_pf_nonconvergence(self):
+        r = row(1,[A],status='exception',powerflow_converged=0)
+        self.assertEqual(risk.classify(r),('unknown','exception'))
 
     def test_modal_instability_and_health_are_distinct(self):
         self.assertEqual(risk.classify(row(1, [A]))[0], "stable")
