@@ -1,92 +1,164 @@
-# probabilistic_contingencies
+# Probabilistic contingencies
 
+Pipeline de contingències N−1/N−2 per a xarxes elèctriques amb VeraGrid: fluxos de potència, recurs a OPF, comprovació EMT, modes de Floquet i anàlisi de vulnerabilitat amb casos desconeguts explícits.
 
+## Estructura
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+```text
+main.py                 Entrada del pipeline i tasques PyCOMPSs
+config.py               Xarxa seleccionada i rutes
+local_exec.sh           Execució local en sèrie i depuració
+pycompss_mn.sh          Enviament a MareNostrum amb PyCOMPSs
+risk_analysis.py        Informes de risc de tota la BD
+modal_analysis.py       Inspecció dels modes d’una contingència
+contingencies/          Càlcul, persistència del mestre, diagnòstics i dummies
+tests/                  Proves sense simulacions EMT
+docs/                   Teoria, notes BSC i diagnòstics tècnics
+outputs/                BD, gràfics, logs i perfils generats
+paper/                  Manuscrit i figures del paper
+legacy/                 Versions i eines antigues conservades
+grids/                  Xarxes d’entrada addicionals
+datagen/                Generació de dades
+VeraGrid_TenSyGrid/      Submòdul del motor
+stability_analysis/     Submòdul amb eines i dades addicionals
 ```
-cd existing_repo
-git remote add origin https://gitlab.upc.edu/citcea/probabilistic_contingencies.git
-git branch -M main
-git push -uf origin main
+
+Els submòduls mantenen la seva ubicació. El codi de `legacy/` conserva les referències històriques i no forma part del pipeline actual.
+
+## Entorn local
+
+S’ha executat amb Python 3.12. En una màquina nova, inicialitza els submòduls i crea un entorn amb les dependències del motor i matplotlib:
+
+```bash
+git submodule update --init --recursive
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ./VeraGrid_TenSyGrid/src/VeraGridEngine
+python -m pip install matplotlib
 ```
 
-## Integrate with your tools
+`config.py` incorpora el codi del submòdul a `sys.path`. No cal instal·lar PyCOMPSs per treballar en local: el llançador força els dummies i executa les tasques en sèrie.
 
-- [ ] [Set up project integrations](https://gitlab.upc.edu/citcea/probabilistic_contingencies/-/settings/integrations)
+Selecciona `GRID_NAME` i `GRID_PATH` a `config.py`. La BD es deriva del nom de la xarxa i es desa a `outputs/databases/`.
 
-## Collaborate with your team
+## Execució local
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```bash
+./local_exec.sh --preprocess
+./local_exec.sh --ids 13
+./local_exec.sh --pending
+```
 
-## Test and Deploy
+Sense arguments, es genera la BD i es processen les pendents. Amb `CLEAR_DB_ON_START=True`, generar la BD esborra la BD anterior d’aquella xarxa. `--ids`, `--pending` i `--all` utilitzen l’existent.
 
-Use the built-in continuous integration in GitLab.
+Per depurar un cas sense generar informes:
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+```bash
+./local_exec.sh --debug --ids 13 --skip-risk
+```
 
-***
+Dins de `pdb`:
 
-# Editing this README
+```text
+b contingency.calculate_contingency
+c
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Es pot seleccionar un altre intèrpret amb `PYTHON_BIN=/ruta/python`. El llançador prioritza l’entorn virtual actiu, després `.venv/` i finalment `python3` del PATH.
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## MareNostrum
 
-## Name
-Choose a self-explaining name for your project.
+Executa el llançador directament des del login node. Prepara hdf5, Python, COMPSs i el venv, i envia la feina amb `enqueue_compss`.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```bash
+QOS=gp_debug EXEC_TIME=120 ./pycompss_mn.sh --preprocess
+# Espera que el job acabi abans de processar:
+QOS=gp_debug EXEC_TIME=120 NUM_NODES=1 COMPUTING_UNITS=8 \
+  ./pycompss_mn.sh --pending
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+`NUM_NODES` selecciona els nodes, `CPUS_PER_NODE` els cores per node i `COMPUTING_UNITS` els cores reservats per tasca. Aquest últim limita la concurrència; no és el límit de recursos del compte. Els paràmetres i les versions dels mòduls es poden sobreescriure amb variables d’entorn.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```bash
+squeue -u "$USER"
+sacct -j JOBID --format=JobID,State,ExitCode,Elapsed
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Els logs nous es desen a `outputs/logs/compss/`, incloent `compss-JOBID.out`, `.err` i `.COMPSs/`. `LOG_DIR` permet seleccionar una altra ubicació. Més notes a [docs/bsc.md](docs/bsc.md).
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## Persistència i represa
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+El mestre carrega les definicions des de SQLite i les envia als workers. Els workers només calculen i retornen un diccionari amb l’ID i el resultat; no accedeixen a la BD. `contingencies/storage.py` valida els IDs i desa els resultats al mestre en transaccions per lots.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```bash
+./local_exec.sh --pending --batch-size 64
+QOS=gp_debug EXEC_TIME=120 NUM_NODES=1 COMPUTING_UNITS=8 \
+  ./pycompss_mn.sh --pending --batch-size 256
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+`--db ruta.db` permet executar el pipeline sobre una altra BD sense editar `config.py`; també determina el fitxer creat o regenerat amb `--preprocess`. És útil per provar sobre una còpia sense alterar els resultats originals.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+`--batch-size` controla els resultats per transacció (256 per defecte), no el nombre de tasques en paral·lel. Les tasques s’envien abans de recollir els lots. El log mostra `Committed X/Y contingency results` després de cada commit. Un lot petit confirma l’avenç més sovint; un lot gran redueix el nombre de transaccions. La recollida segueix l’ordre dels IDs seleccionats, de manera que una tasca lenta pot retardar el commit del seu lot.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Si falla una tasca del runtime, el transport o l’escriptura d’un lot, l’error es propaga. Els lots confirmats es conserven i el lot no desat manté els valors anteriors. En una primera execució, aquests casos continuen `pending` i es reprenen amb `--pending`; en un reprocessament amb `--all` o `--ids`, els casos no desats conserven el resultat anterior i s’han de seleccionar explícitament per tornar-los a calcular. Una excepció de càlcul capturada es desa amb `status='exception'` i no és una tasca del runtime fallida.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+La centralització elimina els escriptors concurrents dels workers dins d’una mateixa execució. Cal utilitzar una sola execució de càlcul per BD alhora; no coordina dos mestres independents que treballin sobre el mateix fitxer.
 
-## License
-For open source projects, say how it is licensed.
+## Informes i resultats
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Quan totes les tasques han acabat, el mestre genera automàticament l’anàlisi de risc de **tota la BD**, també si s’han seleccionat alguns IDs o si no queden pendents. `--preprocess` només genera la BD. `--skip-risk` omet els informes i `--risk-out carpeta` en canvia la sortida.
+
+| Contingut | Ubicació per defecte |
+|---|---|
+| Base de dades | `outputs/databases/results_<xarxa>.db` |
+| Risc: CSV, JSON i gràfics | `outputs/plots/risk_analysis/results_<xarxa>/` |
+| Logs PyCOMPSs | `outputs/logs/compss/` |
+| Logs Slurm històrics | `outputs/logs/slurm/` |
+| Perfils de rendiment | `outputs/profiles/` |
+
+Es poden regenerar els informes sense executar simulacions:
+
+```bash
+python risk_analysis.py
+python risk_analysis.py --db outputs/databases/results_IEEE_9_Bus.db
+```
+
+Per defecte, cada parella N−2 es compta una sola vegada. `--n2-counting rows` permet comparar amb el comptatge històric per files. Els casos sense diagnòstic són desconeguts; es mostren cobertura i límits de risc brut, sense un rànquing definitiu.
+
+Per consultar un cas i, opcionalment, desar-ne el gràfic:
+
+```bash
+python modal_analysis.py 13 --no-show
+python modal_analysis.py 13 --no-show --save outputs/plots/modal_analysis/modes_13.png
+```
+
+`--db` selecciona una altra BD. L’estabilitat dels modes calculats i la fragmentació de la xarxa es mostren separadament. Els dos analitzadors llegeixen la BD sense modificar-la.
+
+La formulació i les limitacions del model són a [docs/teoria.md](docs/teoria.md) i [docs/buses_aislados_emt.md](docs/buses_aislados_emt.md).
+
+## Proves
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Les proves de diagnòstic, risc i ordre del pipeline no executen simulacions ni requereixen el motor VeraGrid.
+
+## Validació amb PyCOMPSs real
+
+El 17 de novembre de 2026 s’ha validat la persistència centralitzada amb dues proves a `gp_debug`, cadascuna limitada a la contingència 13 de l’IEEE 9 i a 10 minuts. S’han utilitzat còpies de la BD amb el cas marcat prèviament com a pendent.
+
+| Job | Disposició | Estat | Durada |
+|---|---|---|---|
+| `49156017` | Mestre i worker en un node | COMPLETED, codi 0 | 2 min 22 s |
+| `49156230` | Mestre i worker en nodes diferents; `WORKER_IN_MASTER_CPUS=0` | COMPLETED, codi 0 | 2 min 27 s |
+
+En totes dues proves, el worker ha retornat el resultat, el mestre ha confirmat el lot i s’han generat els informes. El cas recalculat ha quedat `ok`, amb 12 autovalors finits. Només s’ha modificat l’ID 13 de cada còpia; el SHA-256 de la BD original no ha canviat. L’evidència local és a `outputs/validation/`, incloent logs i `validation.json`.
+
+Aquestes proves comproven el flux real i el transport entre nodes per a un cas petit. Encara no són una prova de càrrega amb milers de tasques ni de rendiment a gran escala.
+
+## Canvi d’estructura
+
+Les comandes d’entrada s’han mantingut a l’arrel. Les BD que hi havia a l’arrel s’han traslladat a `outputs/databases/`; `plots/`, `compss_logs/`, `slurm_outputs/` i els perfils s’han agrupat a `outputs/`. Els documents `teoria.md`, `bsc.md` i `notes.txt` són ara a `docs/`.
+
+`outputs/` queda exclòs de Git, excepte la seva guia. Els fitxers generats que abans estaven versionats es conserven localment a la nova ubicació. Les referències a rutes antigues dins dels logs històrics no s’han reescrit.

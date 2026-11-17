@@ -211,3 +211,7 @@ slurm_outputs/*
 !slurm_outputs/.gitkeep
 new-GridCal/
 temp_grids/
+
+# Resultats generats del pipeline
+/outputs/*
+!/outputs/README.md

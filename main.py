@@ -15,10 +15,17 @@ Modes d'ús:
      selecció de contingències sense regenerar la base de dades (assumeix que
      ja existeix).
 
-Cada contingència es processa com una ``@task`` que escriu directament el
-resultat a la BD (cicle ``load -> calculate -> save`` de
-``contingency.process_contingency``). El mestre llança les tasques, espera que
-acabin (``compss_wait_on``) i imprimeix un resum.
+El mestre carrega les definicions i les envia a les ``@task``. Els workers
+només calculen: no llegeixen ni escriuen SQLite. El mestre espera els
+resultats (``compss_wait_on``) per lots i els desa en transaccions amb
+``contingencies.storage``. ``--batch-size`` controla quants resultats es
+desen a cada lot (per defecte 256), sense limitar la concurrència de tasques.
+Els lots confirmats es conserven si l'execució s'interromp. Després del
+càlcul, imprimeix un resum i genera els informes de risc
+de tota la BD (CSV, JSON i gràfics, amb N−2 úniques). ``--skip-risk`` omet
+aquests informes; ``--preprocess`` continua generant només la BD.
+Amb ``--ids``, l’informe inclou també la resta de la BD i la seva cobertura.
+Si no queden tasques pendents, es regeneren igualment els informes.
 
 Selecció de contingències per al PROCESS (per ordre de prioritat):
 
@@ -31,9 +38,11 @@ Selecció de contingències per al PROCESS (per ordre de prioritat):
     python main.py --preprocess        # només genera la BD
     python main.py --pending           # només processa les 'pending'
     python main.py --all               # reprocessa TOTES (sense regenerar)
-    python main.py --ids 1,2,3         # només unes quantes (a posteriori)
+    python main.py --ids 1,2,3         # calcula aquests IDs i informa de tota la BD
+    python main.py --ids 13 --skip-risk # depura un cas sense generar informes
+    python main.py --pending --risk-out outputs/plots/prova # selecciona la carpeta d’informes
 
-En local (sense PyCOMPSs instal·lat) s'importa el paquet ``pycompss_dummies``,
+En local (sense PyCOMPSs instal·lat) s'importa el paquet ``contingencies.pycompss_dummies``,
 que executa les ``@task`` en sèrie; al BSC es fa servir PyCOMPSs real i les
 tasques es distribueixen en paral·lel pels nodes/cores.
 """
@@ -43,18 +52,24 @@ import os
 import sqlite3
 import sys
 
-# PyCOMPSs imports (amb fallback als dummies per provar en local sense COMPSs)
-try:
-    from pycompss.api.task import task
-    from pycompss.api.api import compss_wait_on
-    from pycompss.api.constraint import constraint
-except ImportError:
-    from pycompss_dummies.task import task
-    from pycompss_dummies.api import compss_wait_on
-    from pycompss_dummies.constraint import constraint
+# local_exec.sh força els dummies per depurar en un únic procés, fins i tot
+# si PyCOMPSs està instal·lat. Al BSC es mantenen els imports del runtime real.
+if os.environ.get("CONTINGENCIES_LOCAL") == "1":
+    from contingencies.pycompss_dummies.task import task
+    from contingencies.pycompss_dummies.api import compss_wait_on, compss_delete_object
+    from contingencies.pycompss_dummies.constraint import constraint
+else:
+    try:
+        from pycompss.api.task import task
+        from pycompss.api.api import compss_wait_on, compss_delete_object
+        from pycompss.api.constraint import constraint
+    except ImportError:
+        from contingencies.pycompss_dummies.task import task
+        from contingencies.pycompss_dummies.api import compss_wait_on, compss_delete_object
+        from contingencies.pycompss_dummies.constraint import constraint
 
 import config
-import contingency
+from contingencies import contingency, storage
 
 # config.py ja injecta VeraGrid_TenSyGrid/src a sys.path.
 import VeraGridEngine.api as vge
@@ -113,6 +128,7 @@ def check_database_and_tables():
     Returns:
         sqlite3.Connection: Connexió oberta sobre la base de dades.
     """
+    os.makedirs(os.path.dirname(config.DB_FILE), exist_ok=True)
     if not os.path.exists(config.DB_FILE):
         print("Creating results.db...")
         with open(config.DB_FILE, "w") as f:
@@ -230,21 +246,36 @@ COMPUTING_UNITS = os.environ.get("COMPUTING_UNITS", "1")
 
 @constraint(computing_units=COMPUTING_UNITS)
 @task(returns=1)
-def process_contingency_task(contingency_id):
-    """
-    Tasca PyCOMPSs: calcula una contingència i n'escriu el resultat a la BD.
+def process_contingency_task(definition):
+    """Worker sense accés a SQLite; retorna l'ID juntament amb el resultat."""
+    return {
+        "contingency_id": definition["contingency_id"],
+        "result": contingency.process_contingency(definition),
+    }
 
-    ``computing_units`` (vegeu la constant ``COMPUTING_UNITS`` de dalt) indica
-    quants cores ocupa cada tasca; el scheduler de COMPSs fa córrer
-    ``cpus_per_node / computing_units`` tasques per node.
 
-    Args:
-        contingency_id: ID primari de la contingència a processar.
+def process_selected_contingencies(ids, batch_size):
+    """Envia les tasques i desa els resultats al mestre per lots atòmics."""
+    definitions = storage.load_definitions(config.DB_FILE, ids)
+    futures = [process_contingency_task(definition) for definition in definitions]
+    n_ok = 0
+    for start in range(0, len(ids), batch_size):
+        end = start + batch_size
+        batch = futures[start:end]
+        results = compss_wait_on(batch)
+        storage.save_results(config.DB_FILE, results, expected_ids=ids[start:end])
+        n_ok += sum(item["result"].get("status") == contingency.STATUS_OK for item in results)
+        compss_delete_object(*batch)
+        futures[start:end] = [None] * len(batch)
+        print(f"Committed {min(end, len(ids))}/{len(ids)} contingency results.")
+    return n_ok, len(ids) - n_ok
 
-    Returns:
-        dict: El resultat desat a la base de dades (per al resum del mestre).
-    """
-    return contingency.process_contingency(contingency_id)
+
+def positive_int(value):
+    value = int(value)
+    if value < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return value
 
 
 def select_contingency_ids(args):
@@ -255,7 +286,7 @@ def select_contingency_ids(args):
     defecte quan no es passa cap flag).
     """
     if args.ids:
-        return [int(i) for i in args.ids.split(",")]
+        return list(dict.fromkeys(int(i) for i in args.ids.split(",")))
 
     where = "" if args.all else "WHERE status = 'pending'"
     with sqlite3.connect(config.DB_FILE) as conn:
@@ -290,7 +321,30 @@ def main():
         action="store_true",
         help="Process only 'pending' contingencies (skip the preprocess).",
     )
+    parser.add_argument(
+        "--skip-risk",
+        action="store_true",
+        help="Skip risk reports after processing (useful for debugging one case).",
+    )
+    parser.add_argument(
+        "--risk-out",
+        default=None,
+        help="Risk report folder (default: outputs/plots/risk_analysis/<database name>).",
+    )
+    parser.add_argument(
+        "--db",
+        default=None,
+        help="Use a separate SQLite database instead of config.DB_FILE (also applies to preprocess).",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=positive_int,
+        default=256,
+        help="Results per SQLite transaction on the master (default: 256; does not limit task concurrency).",
+    )
     args = parser.parse_args()
+    if args.db is not None:
+        config.DB_FILE = os.path.abspath(os.path.expanduser(args.db))
 
     # --preprocess: NOMÉS genera la BD i surt.
     if args.preprocess:
@@ -308,21 +362,25 @@ def main():
         return
 
     ids = select_contingency_ids(args)
-    if not ids:
+    if ids:
+        print(f"Launching {len(ids)} contingency task(s)...")
+
+        n_ok, n_fail = process_selected_contingencies(ids, args.batch_size)
+        print(f"Done: {len(ids)} contingency(ies) processed "
+              f"({n_ok} ok, {n_fail} other).")
+    else:
         print("No contingencies to process.")
-        return
 
-    print(f"Launching {len(ids)} contingency task(s)...")
+    if not args.skip_risk:
+        from risk_analysis import run_analysis
 
-    # Llança totes les @task (retornen un future amb PyCOMPSs real, o el
-    # resultat directe amb els dummies) i espera que acabin.
-    futures = [process_contingency_task(cid) for cid in ids]
-    results = compss_wait_on(futures)
-
-    n_ok = sum(1 for r in results if r.get("status") == contingency.STATUS_OK)
-    n_fail = len(results) - n_ok
-    print(f"Done: {len(results)} contingency(ies) processed "
-          f"({n_ok} ok, {n_fail} other).")
+        print("Generating risk reports from the entire database (unique N-2 pairs)...")
+        try:
+            run_analysis(config.DB_FILE, out_dir=args.risk_out)
+        except Exception:
+            print("Risk report generation failed; simulation results remain saved in the database.",
+                  file=sys.stderr)
+            raise
 
 
 if __name__ == "__main__":

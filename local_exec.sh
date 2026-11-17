@@ -1,53 +1,62 @@
 #!/usr/bin/env bash
-
-# Llança el pipeline en local, sense Slurm: preprocess + process per a cada contingència.
+# Execució local en sèrie, sense Slurm ni runtime COMPSs.
+# Requereix les dependències de VeraGrid instal·lades al Python seleccionat.
+# La xarxa i la BD es configuren a config.py.
+#
+# Després del càlcul es generen CSV, JSON i gràfics de risc de TOTA la BD,
+# també amb --ids o si no queden pendents. --preprocess només genera la BD.
+# --skip-risk omet els informes; --risk-out /ruta canvia la carpeta de sortida.
+# La inspecció d'un cas amb modal_analysis.py es fa explícitament.
+# Només el mestre accedeix a SQLite; --batch-size N controla els resultats
+# per transacció (256 per defecte), sense limitar les tasques en paral·lel.
+#
+# Ús:
+#   ./local_exec.sh --preprocess         # genera la BD local
+#   ./local_exec.sh --ids 13             # executa només el cas 13
+#   ./local_exec.sh --ids 1,13           # executa diversos casos en sèrie
+#   ./local_exec.sh --debug --ids 13 --skip-risk # depura sense generar informes
+#   ./local_exec.sh --pending            # processa totes les pendents en sèrie
+#   ./local_exec.sh                      # genera la BD i processa les pendents
+#
+# --preprocess i l'execució sense arguments regeneren la BD si
+# config.CLEAR_DB_ON_START és True. --ids utilitza la BD existent i
+# actualitza el resultat del cas encara que ja estigués calculat.
+#
+# Python: entorn virtual actiu, .venv del repo o python3 del PATH.
+# Per seleccionar-ne un altre: PYTHON_BIN=/ruta/python ./local_exec.sh --ids 13
+#
+# Amb pdb, per aturar-se abans del càlcul:
+#   (Pdb) b contingency.calculate_contingency
+#   (Pdb) c
+# Després: n (següent línia), s (entrar), p expressió (inspeccionar), q (sortir).
+# Les excepcions del càlcul es capturen i es desen a la BD; posa un breakpoint
+# al punt que vulguis inspeccionar per seguir-les abans que es capturin.
 
 set -euo pipefail
 
-# Directori del repositori i intèrpret Python del projecte.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_BIN="${PYTHON_BIN:-${SCRIPT_DIR}/.venv/bin/python}"
 
-cd "$SCRIPT_DIR"
+if [[ -z "${PYTHON_BIN:-}" ]]; then
+    if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+        PYTHON_BIN="${VIRTUAL_ENV}/bin/python"
+    elif [[ -x "${SCRIPT_DIR}/.venv/bin/python" ]]; then
+        PYTHON_BIN="${SCRIPT_DIR}/.venv/bin/python"
+    else
+        PYTHON_BIN=python3
+    fi
+fi
 
-if [[ ! -x "$PYTHON_BIN" ]]; then
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
     echo "Python executable not found: $PYTHON_BIN" >&2
     exit 1
 fi
 
-start_time=$(date +%s)
+# main.py selecciona els dummies encara que PyCOMPSs estigui instal·lat.
+export CONTINGENCIES_LOCAL=1
 
-echo "Running preprocess"
-"$PYTHON_BIN" 1.preprocess.py
-
-# Consulta quantes files ha creat el preprocess per definir el rang a processar.
-contingency_count=$("$PYTHON_BIN" -c '
-import sqlite3
-import config
-
-with sqlite3.connect(config.DB_FILE) as connection:
-    print(connection.execute(
-        "SELECT COUNT(*) FROM contingency_results"
-    ).fetchone()[0])
-')
-
-if [[ "$contingency_count" -lt 1 ]]; then
-    echo "No contingencies were generated." >&2
-    exit 1
+if [[ "${1:-}" == "--debug" ]]; then
+    shift
+    exec "$PYTHON_BIN" -u -m pdb "${SCRIPT_DIR}/main.py" "$@"
 fi
 
-echo "Processing $contingency_count contingencies locally"
-# Per defecte, fem servir el 90% dels cores disponibles (mínim 1).
-job_slots="${JOB_SLOTS:-$(( $(nproc) * 90 / 100 ))}"
-job_slots="${job_slots:-1}"
-if [[ "$job_slots" -lt 1 ]]; then
-    job_slots=1
-fi
-echo "Using $job_slots parallel workers"
-if ! seq 1 "$contingency_count" | xargs -n1 -P "$job_slots" "$PYTHON_BIN" 2.process.py; then
-    echo "Alguna contingència ha fallat (mira el log)." >&2
-fi
-
-end_time=$(date +%s)
-elapsed=$(( end_time - start_time ))
-printf 'Total elapsed time: %02d:%02d:%02d\n' "$(( elapsed / 3600 ))" "$(( (elapsed % 3600) / 60 ))" "$(( elapsed % 60 ))"
+exec "$PYTHON_BIN" -u "${SCRIPT_DIR}/main.py" "$@"

@@ -1,7 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./VeraGrid/src",
-        "./0.",
-        "./A."
+        ".",
+        "./VeraGrid_TenSyGrid/src"
     ]
 }

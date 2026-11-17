@@ -168,7 +168,7 @@ comprobaciones siguiente (de más barato/determinista a más caro):
    periodo, Arnoldi por bloques) y se serializan en `eigenvalues`. Si este
    paso falla: `small_signal_error` y `stable` conserva solo la comprobación
    numérica del transitorio. El veredicte final de `stable` es modal:
-   transitorio sano **y** `max(Re λ) ≤ STABLE_MAX_REAL_PART` (= 0).
+   transitorio sano **y** `max(Re λ) ≤ STABLE_MAX_REAL_PART` (= 1e-6).
 
 Otros cambios:
 
@@ -277,7 +277,7 @@ principal no tiene slack (se descarta con "No slack nodes in the island").
 3. Bug comunicado a los desarrolladores de VeraGrid con reproducción
    mínima, medidas y traceback.
 
-## 7. Análisis modal: columna `eigenvalues` y `4.analyse.py`
+## 7. Análisis modal: columna `eigenvalues` y `modal_analysis.py`
 
 ### 7.1 Cálculo y almacenamiento
 
@@ -313,9 +313,9 @@ artefacto de Arnoldi:
 
 Nota de interpretación: el criterio de estabilidad es **modal**: `stable=1`
 exige que el transitorio corto sea numéricamente sano y que todos los modos
-de Floquet tengan Re λ ≤ 0 (`STABLE_MAX_REAL_PART=0.0`). Los modos con
+de Floquet tengan Re λ ≤ 0 (`STABLE_MAX_REAL_PART=1e-6`). Los modos con
 |μ| apenas por encima de 1 (Re λ ~ 0.05–0.15) pueden ser artefactos de la
-aproximación de Arnoldi; la tabla y el gráfico de `4.analyse.py` permiten
+aproximación de Arnoldi; la tabla y el gráfico de `modal_analysis.py` permiten
 inspeccionar los márgenes caso por caso.
 
 ### 7.2 Dos bugs del criterio `stable` anterior
@@ -359,28 +359,36 @@ Consecuencias del arreglo:
   modos: una inestabilidad débil (Re λ = 2.5 1/s, τ ≈ 0.4 s) solo crece un
   ~5% en esa ventana, invisible para el solver.
 
-### 7.3 Uso de `4.analyse.py`
+### 7.3 Uso de `modal_analysis.py`
+
+Este visor sustituye a `4.analyse.py`. Consulta la BD en modo de solo lectura;
+`--db` permite seleccionar otra red sin editar `config.py`.
 
 ```bash
-python 4.analyse.py 13                     # tabla + ventana matplotlib
-python 4.analyse.py 13 --save modes.png    # además guarda PNG
-python 4.analyse.py 13 --no-show           # sin ventana (entornos headless)
+python modal_analysis.py 13
+python modal_analysis.py 13 --db outputs/databases/results_IEEE_9_Bus.db --no-show
+python modal_analysis.py 13 --no-show --save outputs/plots/modal_analysis/modes_13.png
 ```
 
-Imprime el resumen de la contingencia (definición, status, islas, buses
-aislados) y una tabla de modos ordenada de menor a mayor amortimiento
-(Re λ descendente: el menos estable primero), con frecuencia
-`f = |Im λ|/(2π)` y damping `ζ = -Re λ/|λ|` (mismas fórmulas que el motor).
+El resumen separa la topología, el estado almacenado, el diagnóstico de riesgo
+y el resultado de los modos calculados. Los campos NULL se muestran como
+desconocidos. Un caso sin autovalores no tiene diagnóstico modal, aunque
+`stable` contenga el valor de reserva False. Si hay varias islas, se conserva
+el diagnóstico de fragmentación aunque los modos calculados no sean inestables.
 
-El gráfico tiene la representación habitual de estabilidad small-signal, en
-dos paneles:
+`contingencies/result_diagnostics.py` centraliza el umbral `STABLE_MAX_REAL_PART=1e-6`,
+utilizado por `contingency.py`, `risk_analysis.py` y el visor. La tabla y el
+gráfico distinguen modos estables (Re λ < −tol), próximos al eje
+(|Re λ| ≤ tol) e inestables (Re λ > tol). La proximidad al eje no certifica
+marginalidad exacta ni demuestra que el signo sea ruido numérico. La banda
+es absoluta; otros modos del espectro no alteran este umbral.
 
-1. **Plano s**: mitad derecha (Re λ > 0) sombreada en rojo = región
-   INESTABLE; mitad izquierda en verde = ESTABLE; frontera sobre el eje
-   imaginario; modos estables como puntos azules e inestables como × rojas,
-   anotados con su índice de modo.
-2. **Amortimiento vs frecuencia**: ζ contra f [Hz], con ζ < 0 sombreado en
-   rojo (inestable).
+La tabla conserva el índice original y ordena por parte real descendente,
+no por razón de amortiguamiento. Muestra `f = |Im λ|/(2π)` y
+`ζ = −Re λ/|λ|`; para λ=0 el amortiguamiento es indefinido. Se validan la
+estructura y la finitud de los autovalores antes de mostrarlos. Solo se
+inspeccionan los modos almacenados: el visor no calcula ni certifica el
+espectro completo.
 
-Las contingencias sin `eigenvalues` (p. ej. `isolated_buses`) imprimen el
-resumen y avisan de que no hay datos modales.
+Con `--no-show` se imprime la tabla sin abrir ventanas ni requerir matplotlib;
+si además se pide `--save`, se genera el plano s con el backend Agg.
