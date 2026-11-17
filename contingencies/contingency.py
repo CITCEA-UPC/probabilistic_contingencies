@@ -22,10 +22,12 @@ El flux d'una contingència (vegeu ``docs/buses_aislados_emt.md``):
      Si no convergeixen, es classifica i s’atura, sense OPF ni canvi d’slack.
   4. Si tot és viable, adjunta els models EMT, executa un transitori curt de
      comprovació numèrica i calcula els autovalors de Floquet dominants. El
-     veredicte d'estabilitat és modal (``max(Re lambda) <= 0``).
+     veredicte d'estabilitat és modal (``max(Re lambda) <= 1e-6``).
 """
 
 import ast
+from collections import Counter
+from itertools import chain
 import json
 import os
 import time
@@ -35,11 +37,9 @@ from contingencies.result_diagnostics import STABLE_MAX_REAL_PART
 
 # Imports de VeraGridEngine per a simulacions
 import VeraGridEngine.api as vge
-from VeraGridEngine.basic_structures import Logger
 from VeraGridEngine.enumerations import LogSeverity
 from VeraGridEngine.Simulations.EMT.emt_driver import EmtSimulationDriver
 from VeraGridEngine.Simulations.EMT.emt_options import EmtOptions
-from VeraGridEngine.Simulations.EMT.emt_problem_factory import build_emt_problem
 from VeraGridEngine.Simulations.EMT.problems.emt_problem_dae import EmtTopologyError
 from VeraGridEngine.Simulations.SmallSignalStabilityEmt.small_signal_stability_emt_driver import (
     SmallSignalStabilityEmtDriver,
@@ -148,31 +148,14 @@ def get_buses_with_few_connections(grid):
     Returns:
         list: Busos (objectes Bus) amb menys de 2 connexions actives.
     """
-    bus_connection_count = {}
-
-    def _count(bus):
-        bus_connection_count[bus] = bus_connection_count.get(bus, 0) + 1
-
-    # Branques amb model EMT: línies i transformadors 2D actius.
-    for branch in list(grid.lines) + list(grid.transformers2w):
+    counts = Counter()
+    for branch in chain(grid.lines, grid.transformers2w):
         if branch.active:
-            _count(branch.bus_from)
-            _count(branch.bus_to)
-
-    # Injeccions amb model EMT: generadors, càrregues i shunts actius.
-    for gen in grid.generators:
-        if gen.active:
-            _count(gen.bus)
-
-    for load in grid.loads:
-        if load.active:
-            _count(load.bus)
-
-    for shunt in grid.shunts:
-        if shunt.active:
-            _count(shunt.bus)
-
-    return [bus for bus in grid.buses if bus_connection_count.get(bus, 0) < 2]
+            counts.update((branch.bus_from, branch.bus_to))
+    for device in chain(grid.generators, grid.loads, grid.shunts):
+        if device.active:
+            counts[device.bus] += 1
+    return [bus for bus in grid.buses if counts[bus] < 2]
 
 
 def get_islands_info(grid):
@@ -266,36 +249,12 @@ def run_small_signal_emt_analysis(grid, pf_results, pf_results_3):
 
 def run_small_signal_eigenvalues(grid, pf_results, pf_results_3):
     """
-    Calcula els autovalors dominants de Floquet del sistema post-contingència.
+    Calcula SMALL_SIGNAL_MODES exponents de Floquet (lambda=log(mu)/T).
 
-    Construeix un problema EMT periòdic (pas = període de la xarxa /
-    STEPS_PER_PERIOD, temps simulat = 1 període) i executa el
-    SmallSignalStabilityEmtDriver, que captura el cicle límit i approxima els
-    multiplicadors de Floquet dominants amb Arnoldi per blocs. Els autovalors
-    en el domini s són lambda = log(mu) / T: la part real negativa indica
-    estabilitat (mateix criteri que els exemples del motor a
-    VeraGrid_TenSyGrid/src/TensyGridEngine/emt/emt_ieee9_small_signal.py).
-
-    El problema EMT es construeix explícitament amb `build_emt_problem` i
-    s'injecta al driver perquè la inicialització faci servir tant el power
-    flow balancejat com el trifàsic (el constructor del driver només en
-    permet un).
-
-    Args:
-        grid: MultiCircuit amb la contingència aplicada i els models EMT
-              adjunts (vegeu `attach_emt_models`).
-        pf_results: Resultats del power flow balancejat (convergits).
-        pf_results_3: Resultats del power flow trifàsic (convergits).
-
-    Returns:
-        numpy.ndarray: Vector complex amb els autovalors (domini s) dels
-                       SMALL_SIGNAL_MODES modes dominants.
-
-    Raises:
-        RuntimeError: Si el driver no retorna resultats o si la construcció del
-                      problema EMT ha registrat errors al logger.
-        Exception: Qualsevol error del càlcul de Floquet (el crida ho
-                   classifica com a `small_signal_error`).
+    El driver construeix un únic problema EMT amb els dos power flows.
+    Es captura un període amb pas T/STEPS_PER_PERIOD i s'usa el camí
+    Arnoldi/ARPACK estàndard. Els errors de construcció s'eleven abans
+    d'executar el càlcul; el caller els classifica com a small_signal_error.
     """
     period = 1.0 / grid.fBase
     emt_options = EmtOptions(
@@ -307,24 +266,6 @@ def run_small_signal_eigenvalues(grid, pf_results, pf_results_3):
         initialization_method=EmtInitializationMethod.Auto,
         verbose=0,
     )
-    logger = Logger()
-    problem = build_emt_problem(
-        grid=grid,
-        options=emt_options,
-        pf_results=pf_results,
-        pf_results_3ph=pf_results_3,
-        logger=logger,
-    )
-
-    # El motor no llença excepcions pels problemes de topologia o
-    # d'inicialització: els registra al logger del problema. Sense logger,
-    # `validate_line_phase_layout` petava amb AttributeError; amb logger però
-    # sense consultar-lo, els errors quedarien muts i es calcularia autovalors
-    # a partir d'un model EMT mal construït. Per això es tracten com a fallada.
-    error_entries = [entry for entry in logger.entries if entry.severity == LogSeverity.Error]
-    if error_entries:
-        raise RuntimeError("; ".join(str(entry) for entry in error_entries))
-
     sss_options = SmallSignalStabilityEmtOptions(
         k=SMALL_SIGNAL_MODES,
         target_period=period,
@@ -339,10 +280,11 @@ def run_small_signal_eigenvalues(grid, pf_results, pf_results_3):
         emt_options=emt_options,
         sss_options=sss_options,
         pf_results=pf_results,
+        pf_results_3ph=pf_results_3,
     )
-    # El driver ja ha construït un problema només amb el PF balancejat; el
-    # substituïm pel que inclou també el punt de funcionament trifàsic.
-    driver.problem = problem
+    error_entries = [entry for entry in driver.logger.entries if entry.severity == LogSeverity.Error]
+    if error_entries:
+        raise RuntimeError("; ".join(str(entry) for entry in error_entries))
     driver.run()
 
     if driver.results is None:

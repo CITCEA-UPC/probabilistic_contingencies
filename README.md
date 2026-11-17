@@ -39,7 +39,7 @@ python -m pip install matplotlib
 
 `config.py` incorpora el codi del submòdul a `sys.path`. No cal instal·lar PyCOMPSs per treballar en local: el llançador força els dummies i executa les tasques en sèrie.
 
-Selecciona `GRID_NAME` i `GRID_PATH` a `config.py`. La BD es deriva del nom de la xarxa i es desa a `outputs/databases/`.
+Selecciona `GRID_NAME` i `GRID_PATH` a `config.py`. La BD es deriva del nom de la xarxa i es desa a `outputs/databases/`. També es pot seleccionar la xarxa amb `--grid /ruta/xarxa.raw`, sense editar la configuració; `--db` té prioritat sobre el nom de BD derivat. `--reset-db` força la regeneració des de zero. Aquestes dues opcions s’utilitzen amb el pipeline complet o `--preprocess`, sense `--pending`, `--all` ni `--ids`.
 
 L’estudi manté les dades de la xarxa i només desactiva els elements de cada contingència. El pipeline no reassigna l’slack, no modifica les consignes i no intenta recuperar la convergència amb OPF ni redespatx. Si un càlcul no convergeix o el motor rebutja la topologia, es desa el diagnòstic disponible. Les columnes `opf_needed` i `opf_converged` es mantenen per compatibilitat amb BD històriques; els càlculs nous no executen OPF.
 
@@ -86,6 +86,23 @@ squeue -u "$USER"
 sacct -j JOBID --format=JobID,State,ExitCode,Elapsed
 ```
 
+Per regenerar el catàleg del 118 i executar-lo en un sol job a la cua general:
+
+```bash
+QOS=gp_bsccs EXEC_TIME=2880 NUM_NODES=20 \
+CPUS_PER_NODE=112 WORKER_IN_MASTER_CPUS=112 \
+COMPUTING_UNITS=8 NATIVE_THREADS=1 \
+./pycompss_mn.sh \
+  --grid "$PWD/stability_analysis/stability_analysis/data/raw/IEEE118busNREL.raw" \
+  --db "$PWD/outputs/databases/results_IEEE118busNREL.db" \
+  --reset-db --batch-size 256
+```
+
+Això esborra els resultats anteriors d'aquella BD quan comença el job. No
+executar-ho mentre una altra execució utilitza la mateixa BD. No s'hi posa
+`--pending`, perquè el job ha de començar pel preprocess. Les limitacions
+EMT del motor continuen aplicant-se; regenerar la BD no les corregeix.
+
 Els logs nous es desen a `outputs/logs/compss/`, incloent `compss-JOBID.out`, `.err` i `.COMPSs/`. `LOG_DIR` permet seleccionar una altra ubicació. Més notes a [docs/bsc.md](docs/bsc.md).
 
 ## Persistència i represa
@@ -101,6 +118,8 @@ QOS=gp_debug EXEC_TIME=120 NUM_NODES=1 COMPUTING_UNITS=8 \
 `--db ruta.db` permet executar el pipeline sobre una altra BD sense editar `config.py`; també determina el fitxer creat o regenerat amb `--preprocess`. És útil per provar sobre una còpia sense alterar els resultats originals.
 
 `--batch-size` controla els resultats per transacció (256 per defecte), no el nombre de tasques en paral·lel. Les tasques s’envien abans de recollir els lots. El log mostra `Committed X/Y contingency results` després de cada commit. Un lot petit confirma l’avenç més sovint; un lot gran redueix el nombre de transaccions. La recollida segueix l’ordre dels IDs seleccionats, de manera que una tasca lenta pot retardar el commit del seu lot.
+
+Els logs inclouen un resum JSON `PROCESS_PERFORMANCE` amb temps del mestre per carregar definicions, enviar tasques, esperar resultats i persistir lots, així com els recomptes enviats i confirmats. Es publica també si el procés falla, amb `completed=false`. Els informes tenen un resum separat `RISK_PERFORMANCE`. Aquests temps exclouen l’arrencada i el tancament del runtime; l’espera no és temps de CPU i la persistència inclou tota la crida d’emmagatzematge. El protocol experimental és a [validation/PERFORMANCE.md](validation/PERFORMANCE.md).
 
 Si falla una tasca del runtime, el transport o l’escriptura d’un lot, l’error es propaga. Els lots confirmats es conserven i el lot no desat manté els valors anteriors. En una primera execució, aquests casos continuen `pending` i es reprenen amb `--pending`; en un reprocessament amb `--all` o `--ids`, els casos no desats conserven el resultat anterior i s’han de seleccionar explícitament per tornar-los a calcular. Una excepció de càlcul capturada es desa amb `status='exception'` i no és una tasca del runtime fallida.
 

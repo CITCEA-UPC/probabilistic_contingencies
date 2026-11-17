@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 from pathlib import Path
 import sqlite3
 import sys
@@ -132,6 +133,62 @@ class PipelineTests(unittest.TestCase):
         events, _, _ = self.run_main(['--pending','--batch-size','2'], [1,2,3])
         self.assertEqual(events, [('task',1),('task',2),('task',3),'wait','save','wait','save','risk'])
 
+    def capture_processing_metrics(self, fail_second_save=False):
+        clock = [100.0]
+        saves = []
+        def load(*args):
+            clock[0] += 2.0
+            return [{'contingency_id': cid} for cid in [1,2,3]]
+        def submit(definition):
+            clock[0] += 1.0
+            return {'contingency_id': definition['contingency_id'], 'result': {'status':'ok'}}
+        def wait(batch):
+            clock[0] += 3.0
+            return batch
+        def save(db, results, **kwargs):
+            clock[0] += 5.0
+            saves.append(results)
+            if fail_second_save and len(saves) == 2:
+                raise RuntimeError('transaction failed')
+        output = io.StringIO()
+        with patch.object(self.pipeline, 'perf_counter', side_effect=lambda:clock[0]), \
+             patch.object(storage, 'load_definitions', side_effect=load), \
+             patch.object(self.pipeline, 'process_contingency_task', side_effect=submit), \
+             patch.object(self.pipeline, 'compss_wait_on', side_effect=wait), \
+             patch.object(storage, 'save_results', side_effect=save), \
+             patch.object(self.pipeline, 'compss_delete_object'), \
+             contextlib.redirect_stdout(output):
+            if fail_second_save:
+                with self.assertRaisesRegex(RuntimeError, 'transaction failed'):
+                    self.pipeline.process_selected_contingencies([1,2,3],2)
+            else:
+                self.assertEqual(self.pipeline.process_selected_contingencies([1,2,3],2),(3,0))
+        summaries = [line.removeprefix('PROCESS_PERFORMANCE ') for line in output.getvalue().splitlines()
+                     if line.startswith('PROCESS_PERFORMANCE ')]
+        self.assertEqual(len(summaries),1)
+        return json.loads(summaries[0])
+
+    def test_master_timings_separate_wait_from_persistence(self):
+        metrics = self.capture_processing_metrics()
+        self.assertTrue(metrics['completed'])
+        self.assertEqual(metrics['selected'],3)
+        self.assertEqual(metrics['submitted'],3)
+        self.assertEqual(metrics['committed'],3)
+        self.assertEqual(metrics['committed_batches'],2)
+        self.assertEqual(metrics['load_definitions_s'],2.0)
+        self.assertEqual(metrics['submit_s'],3.0)
+        self.assertEqual(metrics['wait_results_s'],6.0)
+        self.assertEqual(metrics['persist_results_s'],10.0)
+        self.assertEqual(metrics['processing_total_s'],21.0)
+
+    def test_failed_transaction_retains_partial_progress_in_timing_summary(self):
+        metrics = self.capture_processing_metrics(fail_second_save=True)
+        self.assertFalse(metrics['completed'])
+        self.assertEqual(metrics['submitted'],3)
+        self.assertEqual(metrics['committed'],2)
+        self.assertEqual(metrics['committed_batches'],1)
+        self.assertEqual(metrics['persist_results_s'],10.0)
+
     def test_worker_returns_id_and_result_without_storage_access(self):
         definition = {'contingency_id':13, 'grid_path':'test.raw'}
         self.pipeline.contingency.process_contingency = Mock(return_value={'status':'ok'})
@@ -154,6 +211,55 @@ class PipelineTests(unittest.TestCase):
         _, risk, _ = self.run_main(['--pending','--db',str(copy)], [1])
         risk.assert_called_once_with(str(copy), out_dir=None)
         self.assertEqual(self.pipeline.config.DB_FILE, str(copy))
+
+    def test_grid_and_reset_select_full_pipeline_without_editing_config(self):
+        grid = Path(self.tmp.name) / 'IEEE118.raw'
+        grid.touch()
+        copy = Path(self.tmp.name) / 'fresh118.db'
+        copy.touch()
+        events, risk, preprocess = self.run_main(
+            ['--grid',str(grid),'--db',str(copy),'--reset-db'],[1])
+        preprocess.assert_called_once()
+        self.assertEqual(self.pipeline.config.GRID_NAME,'IEEE118.raw')
+        self.assertEqual(self.pipeline.config.GRID_PATH,str(grid))
+        self.assertEqual(self.pipeline.config.DB_FILE,str(copy))
+        self.assertTrue(self.pipeline.config.CLEAR_DB_ON_START)
+        self.assertEqual(events,[('task',1),'wait','save','risk'])
+
+    def test_grid_derives_database_name_in_existing_database_directory(self):
+        grid = Path(self.tmp.name) / 'IEEE 118.raw'
+        grid.touch()
+        _, _, preprocess = self.run_main(['--preprocess','--grid',str(grid)],[])
+        self.assertEqual(self.pipeline.config.DB_FILE,str(Path(self.tmp.name)/'results_IEEE_118.db'))
+        preprocess.assert_called_once()
+
+    def test_invalid_grid_and_conflicting_reset_are_rejected_before_deleting_database(self):
+        self.db.write_bytes(b'preserve existing results')
+        for args in (['--grid',str(Path(self.tmp.name)/'missing.raw'),'--reset-db'],
+                     ['--pending','--reset-db'],['--all','--grid','anything.raw'],
+                     ['--ids','1','--reset-db']):
+            with self.subTest(args=args), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    self.run_main(args,[])
+                self.assertEqual(error.exception.code,2)
+                self.assertEqual(self.db.read_bytes(),b'preserve existing results')
+
+    def test_explicit_reset_replaces_old_catalogue_when_config_default_is_false(self):
+        grid = Path(self.tmp.name) / 'IEEE118.raw'
+        grid.touch()
+        self.pipeline.config.CLEAR_DB_ON_START=False
+        self.pipeline.vge.open_file=Mock(return_value=types.SimpleNamespace(
+            lines=[object()],generators=[object()],transformers2w=[],
+            transformers3w=[],loads=[]))
+        self.db.write_bytes(b'old database to replace')
+        with patch.object(sys,'argv',['main.py','--grid',str(grid),'--db',str(self.db),
+                                      '--reset-db','--preprocess']), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.pipeline.main()
+        with sqlite3.connect(self.db) as c:
+            rows=c.execute('SELECT grid_name,level,status FROM contingency_results').fetchall()
+        self.assertEqual(rows,[('IEEE118.raw',1,'pending'),('IEEE118.raw',1,'pending'),
+                               ('IEEE118.raw',2,'pending')])
 
     def test_preprocess_creates_only_unique_n1_and_n2_definitions(self):
         self.pipeline.config.GRID_NAME='test.raw'

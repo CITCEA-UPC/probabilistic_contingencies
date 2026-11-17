@@ -420,3 +420,171 @@ La llista històrica de fitxers sense commit de més amunt queda superada per
 aquest commit: consultar `git log -1` i `git status` per obtenir-ne l'estat final.
 Hi ha canvis locals addicionals a `.vscode/settings.json` i `.vscode/latexmk.sh`
 que no formen part d'aquest commit; es conserven sense modificar.
+
+
+## Consolidació mentre s'espera resposta de VeraGrid
+
+S'han afegit les mesures existents a `docs/teoria.md` (secció 8) i a
+`paper/main.tex` (resultats de verificació amb taula). Sense nous jobs,
+canvis del motor ni modificació del càlcul. Sense commit/push encara.
+Preàmbul, autors i capçalera IEEE preservats.
+
+Precisió important respecte del resum anterior: `settle_periods=10` és la
+DURADA TOTAL fins al final de la captura, no deu períodes previs més un.
+Se simula fins a 0.20 s i es captura [0.18,0.20] s. Els encapçalaments
+històrics que diuen «períodes previs» s'han d'interpretar amb aquesta correcció.
+
+La referència escalar dóna ordre observat ~1 per als dos signes; la resposta
+amb història tangent inicial nul·la explica el primer pas. No s'ha notificat
+una segona incidència ni canviat el motor. Millorar el tancament del cicle
+(factor ~74 amb 1200 passos i durada 10 vs 1 període) NO millora el residual
+ni la distància a l'espectre dens en aquella prova. No hi ha tolerància de
+tancament físicament justificada ni validació independent de tot l'espectre.
+El text del paper ja indica que el job 20 nodes es va cancel·lar sense executar.
+
+
+## Prioritat del cas d'estudi confirmada per l'usuari
+
+El paper s'ha de fer amb **IEEE 118 com a cas d'estudi principal**, tant per
+resultats de contingències com per rendiment. El 9 busos serveix per treballar
+en local i fer comprovacions numèriques. Pot aparèixer breument com a suport
+metodològic, però no substituir els resultats del 118 ni ocupar una secció
+experimental principal. La taula detallada del 9 s'ha retirat del manuscrit;
+les mesures es conserven a `docs/teoria.md` secció 8 i als artefactes originals.
+El cos del paper té ara subseccions pendents explícites per al cas base,
+contingències i rendiment del 118. No s'ha substituït el cas principal per
+una altra xarxa. Primer cal resoldre el bloqueig EMT i validar el 118 mateix.
+
+
+## Preparació de la validació del 118 mentre s'espera VeraGrid
+
+Afegit `validation/ieee118_mn.sh`, executable. `--dry-run` mostra la comanda
+sense carregar mòduls ni enviar res. Cas base original, gp_debug, un node,
+8 slots, 120 minuts per defecte; 600 passos/període, durada total 1 període,
+12 modes. Variables STEPS_PER_PERIOD, SETTLE_PERIODS, MODES i EXEC_TIME.
+Cada execució crea per defecte una carpeta de resultats nova. No usa SQLite.
+**No s'ha enviat cap job d'aquest launcher.** Esperar resposta/correcció EMT.
+
+Canvi a `validation/base_case.py`: el recompte simple de connexions només
+es registra com a `connection_count_candidates`; decideix el constructor
+original del motor (que ara encara rebutja SARGENTS). No hi ha monkeypatch
+ni relaxació de validacions. El filtre de producció no s'ha modificat.
+Protocol detallat a `docs/teoria.md` secció 9: primer funcionament base,
+refinament temporal, durada de preparació, selecció de modes i finalment
+poques contingències. El resum anterior del catàleg complet no s'ha de
+reprendre abans de superar aquestes etapes.
+
+Verificació: 54 tests passen, bash -n, dry-run i rebuig de paràmetres invàlids.
+Canvis posteriors al push 7a3ee01 encara sense commit/push.
+
+
+## Neteja autoritzada del repositori
+
+L'usuari ha demanat eliminar COMPLETAMENT `datagen/` i `legacy/`, així com
+auxiliars LaTeX i cachés Python, i afegir-ne les exclusions a Git.
+S'han eliminat les dues carpetes (incloent fitxers locals que hi contenien).
+README actualitzat: ja no formen part de l'estructura vigent; el mapa i
+les referències de més amunt són històriques respecte d'aquestes carpetes.
+**No s'ha tocat cap fitxer de docs/** en aquesta neteja; els seus canvis
+pendents anteriors es mantenen. S'han conservat submòduls, .venv, .git,
+outputs, PDFs finals, fonts LaTeX i figures. La neteja de cachés i auxiliars
+s'ha limitat al codi i documents del projecte, fora d'aquelles ubicacions.
+El .gitignore global incorpora auxiliars LaTeX i cachés d'eines Python;
+__pycache__ i *.py[cod] ja hi eren. No s'ha reescrit l'historial de Git.
+Les eliminacions estan al working tree, encara sense commit/push.
+
+
+## Commit de neteja i protocol de rendiment preparat
+
+A petició de l'usuari s'ha creat el commit **4116f3d** exclusivament amb
+eliminacions de datagen/legacy, .gitignore i README. Els canvis de validació,
+manuscrit, teoria, context i VS Code s'han mantingut fora d'aquest commit.
+No s'ha fet push d'aquest commit.
+
+Protocol preparat a `validation/PERFORMANCE.md`, sense modificar docs/.
+Inclou prerequisits científics, pilot, CU, strong scaling 1/2/4 nodes,
+persistència, tracing, repeticions, definicions de temps, còpies independents
+SQLite i una plantilla de comanda explícitament pendent d'execució.
+S'hi distingeixen mètriques disponibles i instrumentació del mestre pendent.
+Cap benchmark ni job nou enviat. Primer resposta de VeraGrid i validació modal
+real del cas base del 118; després poques contingències i pilot.
+
+
+## Instrumentació mínima del mestre
+
+Afegits a main.py temporitzadors perf_counter, sense canvis al càlcul físic,
+a l'esquema SQLite o a la política de tasques/lots. Logs JSON amb prefix
+PROCESS_PERFORMANCE: càrrega, enviament, espera, persistència i total, més
+selected/submitted/committed/committed_batches/batch_size/completed.
+El resum també surt si falla una etapa i només compta commits confirmats.
+RISK_PERFORMANCE separa el temps de run_analysis i l'estat de completitud.
+No s'escriu cap fitxer nou de mètriques. Total exclou preprocess, selecció
+IDs, informes i runtime; espera inclou sincronització/recepció; persistència
+inclou validació, serialització i transacció. En local el càlcul síncron queda
+dins submit_s, que no s'ha d'interpretar com overhead de PyCOMPSs.
+
+56 tests passen, incloent comprovació amb rellotge controlat de les etapes i
+comptatge parcial quan falla una transacció. No s'ha fet prova a Slurm ni
+benchmark. README i validation/PERFORMANCE.md actualitzats; docs/ intacte en
+aquest pas. Canvis encara sense commit/push, a part del commit de neteja
+4116f3d ja creat abans.
+
+
+## Delimitació confirmada per l'usuari
+
+`stability_analysis` és un altre treball. No n'importar models ni paràmetres,
+ni continuar l'auditoria dels seus Excel per a aquest projecte. El cas actual
+és el RAW del 118 amb els templates de VeraGrid que ja fem servir; la ruta
+del RAW dins el submòdul no implica utilitzar l'altre estudi.
+
+
+
+## Simplificació del càlcul modal
+
+A petició de l'usuari s'ha simplificat contingencies/contingency.py:
+
+- El recompte de connexions usa Counter i agrupa generadors/càrregues/shunts,
+  amb la mateixa regla per a dispositius actius i terminals.
+- El càlcul modal ja no construeix dos problemes EMT per substituir-ne un.
+  El constructor actual SmallSignalStabilityEmtDriver accepta pf_results i
+  pf_results_3ph: s'usen directament i es consulta el seu logger abans de run.
+- Eliminats imports de Logger/build_emt_problem que només servien per aquella
+  construcció redundant i comentaris obsolets sobre l'API/Arnoldi.
+- Es conserven models, opcions numèriques, tractament d'errors i criteris.
+  El paquet bug/ continua com a reproducció independent, sense modificar.
+
+60 tests passen, incloent recepció dels dos PF al mateix driver, parada davant
+errors de construcció, resultats absents i recompte de dispositius actius.
+No s'ha repetit simulació amb motor real ni enviat cap job en aquest pas.
+La revisió d'Excel de l'altre estudi també s'ha retirat del protocol de
+rendiment. No s'ha tocat docs/ ni s'ha fet commit/push d'aquest refactor.
+
+
+## Pipeline del 118 des de zero amb una sola comanda
+
+main.py accepta ara `--grid /ruta/IEEE118busNREL.raw` per seleccionar xarxa
+sense editar config.py, i `--reset-db` per forçar CLEAR_DB_ON_START=True en
+memòria. El nom de BD es deriva del grid dins el directori de BD existent,
+llevat que s'indiqui --db explícitament (té prioritat). Config.py al disc
+continua al 9. Ometre --pending/--all/--ids per fer preprocess + càlcul +
+informes en el mateix job; --preprocess continua fent només catàleg.
+
+Les opcions de grid/reset es rebutgen si es combinen amb modes de processar
+una BD existent. Es valida que el fitxer grid existeixi abans del reset.
+64 tests passen, incloent reinici real d'una BD temporal amb default de
+CLEAR_DB_ON_START=False. No s'ha tocat la BD real ni enviat cap job.
+La comanda de 20 nodes a gp_bsccs amb --grid, --db i --reset-db és al README.
+No reiniciar una BD mentre un altre job la fa servir. El reset no resol
+el bloqueig EMT de SARGENTS.
+
+
+## Publicació autoritzada dels canvis posteriors a la neteja
+
+L'usuari ha demanat push després d'afegir la comanda única del 118.
+Es publiquen el commit de neteja 4116f3d i un commit separat amb --grid,
+--reset-db, temporitzadors, simplificació modal, validació i documents
+pendents. 64 tests passen; bash -n i git diff --check correctes.
+Preàmbul, autors i capçalera IEEE es conserven. Submòduls sense canvis.
+VS Code continua fora del commit: settings.json i latexmk.sh són locals.
+Consultar git log/status per l'identificador i l'estat final. No s'ha enviat
+cap job ni modificat la BD real durant la publicació.

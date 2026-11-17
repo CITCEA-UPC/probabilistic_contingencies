@@ -1,5 +1,7 @@
 """El càlcul només desconnecta els elements; no corregeix slack ni despatx."""
 import ast
+from collections import Counter
+from itertools import chain
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -89,6 +91,72 @@ class ContingencyPolicyTests(unittest.TestCase):
         self.assertEqual(result['isolated_buses'],['bus 0'])
         self.scope['attach_emt_models'].assert_not_called()
         self.assert_network_preserved()
+
+
+class ModalDriverTests(unittest.TestCase):
+    def setUp(self):
+        source=Path(__file__).resolve().parents[1]/'contingencies/contingency.py'
+        tree=ast.parse(source.read_text())
+        function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='run_small_signal_eigenvalues')
+        self.modes=[-.1+1j]
+        self.driver=SimpleNamespace(logger=SimpleNamespace(entries=[]),
+                                    results=SimpleNamespace(eigenvalues=self.modes),run=Mock())
+        self.factory=Mock(return_value=self.driver)
+        self.scope={'STEPS_PER_PERIOD':600,'SMALL_SIGNAL_MODES':12,
+                    'EmtOptions':Mock(),'SmallSignalStabilityEmtOptions':Mock(),
+                    'EmtSolverTypes':SimpleNamespace(StructuralAD='ad'),
+                    'DynamicIntegrationMethod':SimpleNamespace(DaeTrapezoidal='trapezoidal'),
+                    'EmtInitializationMethod':SimpleNamespace(Auto='auto'),
+                    'SmallSignalEmtBuildTypes':SimpleNamespace(Arnoldi='arnoldi'),
+                    'LogSeverity':SimpleNamespace(Error='error'),
+                    'SmallSignalStabilityEmtDriver':self.factory}
+        exec(compile(ast.Module(body=[function],type_ignores=[]),str(source),'exec'),self.scope)
+        self.grid=SimpleNamespace(fBase=50)
+        self.pf=object()
+        self.pf3=object()
+
+    def calculate(self):
+        return self.scope['run_small_signal_eigenvalues'](self.grid,self.pf,self.pf3)
+
+    def test_one_driver_receives_both_power_flows(self):
+        self.assertIs(self.calculate(),self.modes)
+        self.factory.assert_called_once()
+        args=self.factory.call_args.kwargs
+        self.assertIs(args['grid'],self.grid)
+        self.assertIs(args['pf_results'],self.pf)
+        self.assertIs(args['pf_results_3ph'],self.pf3)
+        self.driver.run.assert_called_once_with()
+
+    def test_construction_errors_prevent_modal_execution(self):
+        self.driver.logger.entries=[SimpleNamespace(severity='error',message='invalid model')]
+        with self.assertRaises(RuntimeError): self.calculate()
+        self.driver.run.assert_not_called()
+
+    def test_missing_modal_results_still_raise(self):
+        self.driver.results=None
+        with self.assertRaisesRegex(RuntimeError,'no results'): self.calculate()
+
+
+class ConnectionCountTests(unittest.TestCase):
+    def test_active_branches_and_injections_keep_the_same_terminal_rule(self):
+        source=Path(__file__).resolve().parents[1]/'contingencies/contingency.py'
+        tree=ast.parse(source.read_text())
+        function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='get_buses_with_few_connections')
+        scope={'Counter':Counter,'chain':chain}
+        exec(compile(ast.Module(body=[function],type_ignores=[]),str(source),'exec'),scope)
+        a,b,c,d=[object() for _ in range(4)]
+        grid=SimpleNamespace(buses=[a,b,c,d],
+            lines=[SimpleNamespace(active=True,bus_from=a,bus_to=b),
+                   SimpleNamespace(active=True,bus_from=b,bus_to=c)],
+            generators=[SimpleNamespace(active=True,bus=a)],
+            loads=[],shunts=[SimpleNamespace(active=False,bus=c)],transformers2w=[])
+        count=scope['get_buses_with_few_connections']
+        self.assertEqual(count(grid),[c,d])
+        grid.transformers2w.append(SimpleNamespace(active=True,bus_from=c,bus_to=d))
+        grid.loads.append(SimpleNamespace(active=True,bus=d))
+        self.assertEqual(count(grid),[])
+        grid.lines[0].active=False
+        self.assertEqual(count(grid),[a,b])
 
 
 if __name__=='__main__': unittest.main()

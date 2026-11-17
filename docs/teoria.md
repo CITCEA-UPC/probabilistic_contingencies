@@ -369,3 +369,144 @@ Aquesta formulació respon a les tres preguntes operatives clau:
 3. **Si falla $i$, quin $j$ és més crític?** → $j^*_i = \arg\max_{j \neq i} P_j \cdot S_{i,j}$
 
 És més rigorosa des del punt de vista conceptual i més fàcil de comunicar a operadors i planificadors de xarxes.
+
+
+## 8. Verificació numèrica del càlcul modal (17/11/2026)
+
+Aquesta secció recull mesures ja obtingudes del cas base de 9 busos i de
+l'operador escalar. No implica validació física amb un motor independent,
+ni una certificació de totes les contingències. No s'ha canviat la xarxa.
+
+### 8.1 Referència analítica estable i inestable
+
+`validation/linear_reference.py` aplica l'operador real a $x'=ax$, amb
+$a=-2$ i $a=+2$ s⁻¹, període $T=0.02$ s i 100/200/400/1200 passos.
+La solució contínua és $\mu=\exp(aT)$, $\lambda=a$.
+
+| a (s⁻¹) | Error absolut de λ, 100 passos | Error, 1200 passos | Ordre observat |
+| --- | --- | --- | --- |
+| −2 | 1.00010e−2 | 8.33340e−4 | ≈1 |
+| +2 | 9.99897e−3 | 8.33326e−4 | ≈1 |
+
+Es recupera el signe en ambdós casos i l'error disminueix amb el pas temporal.
+L'ordre s'ha calculat amb $p=\log(e_N/e_M)/\log(M/N)$ entre refinaments.
+Amb la història inicial de derivada tangent nul·la del motor, la resposta
+escalar discreta és
+
+$$\mu_h=\frac{1}{1-ah/2}\left(\frac{1+ah/2}{1-ah/2}\right)^{N-1},\qquad h=T/N.$$
+
+El primer pas explica que l'error global mesurat sigui d'ordre un malgrat
+usar passos trapezoïdals. És una limitació numèrica a considerar; encara no
+s'ha modificat ni comunicat com una segona incidència confirmada del motor.
+L'evidència és a `outputs/validation/ieee9_base_case/linear_reference.json`.
+
+### 8.2 Cas base del 9: trajectòria i operador de Floquet
+
+Els tres experiments tenen PF i PF trifàsic convergits, una illa, i comprovacions
+EMT d'inicialització i convergència positives. La dimensió de l'operador és 147.
+Es comparen els 12 modes seleccionats amb un eigensolver dens aplicat al
+mateix operador, no amb un model físic independent.
+
+| Passos/període | Períodes totals fins al final de la captura | Tancament màxim d'estats | Residual màxim | Distància màxima al multiplicador dens més proper |
+| --- | --- | --- | --- | --- |
+| 600 | 1 | 6.58572e−5 | 4.06922e−12 | 5.70700e−8 |
+| 1200 | 1 | 3.31154e−5 | 5.72819e−12 | 7.73567e−9 |
+| 1200 | 10 | 4.49446e−7 | 2.86004e−9 | 5.81689e−7 |
+
+Sempre es captura l'últim període, de durada 0.02 s. A la tercera prova es
+simula fins a 0.2 s i es captura [0.18, 0.20] s: **no són 10 períodes addicionals
+més un de captura**. `settle_periods` al codi és el temps final en períodes.
+
+El tancament compara els estats als extrems del període, escalats per
+$\max(1,\max_t |x_k(t)|)$. Els angles `theta` es comparen mòdul $2\pi$ amb
+escala unitat. No s'ha fixat encara una tolerància física universal d'acceptació.
+El residual és $\|Mv-\mu v\|/(\|Mv\|+|\mu|\|v\|)$.
+La distància modal és al multiplicador dens més proper; no és un aparellament
+bijectiu de tot l'espectre.
+
+Duplicar els passos redueix l'error de tancament aproximadament a la meitat.
+Amb 1200 passos, capturar el període final després de simular 10 períodes el
+redueix un factor aproximat de 74 respecte de simular-ne un. Tanmateix, el
+residual i la distància a l'espectre dens no milloren en aquella prova:
+**millor tancament no implica una millora de totes les mesures numèriques**.
+
+En tots tres espectres densos hi ha tres exponents amb part real de mòdul
+≤1e−6 s⁻¹. La part real màxima seleccionada és d'ordre 1e−12 s⁻¹. Cal estudiar
+els modes neutres abans de parlar d'estabilitat asimptòtica; recuperar 12 modes
+no certifica per si sol que no n'hi hagi d'altres d'inestables.
+
+Fonts sota `outputs/validation/ieee9_base_case/`:
+
+- `refinement/results/steps_600_settle_1.json`.
+- `refinement/results/steps_1200_settle_1.json`.
+- `settled/results/steps_1200_settle_10.json`.
+- Les mateixes carpetes contenen les trajectòries `.npz`.
+
+### 8.3 Què podem concloure i què falta
+
+Les mesures verifiquen signe i convergència en una referència escalar, residus
+petits dels eigenparells seleccionats i proximitat a l'espectre dens del mateix
+operador. També mostren sensibilitat de la periodicitat al pas i al temps de
+preparació. No validen independentment paràmetres dinàmics, tot l'espectre,
+ni tots els punts postcontingència.
+
+Abans de generalitzar: justificar el criteri de tancament periòdic, comprovar
+l'efecte de la selecció de modes i disposar d'un contrast físic independent.
+El pipeline de producció continua a T/600 amb un període; no s'ha adoptat
+silenciosament la prova de 10 períodes.
+
+
+## 9. Protocol pendent de validació del cas base IEEE 118
+
+El cas principal del paper és el 118. Les mesures del 9 són suport de
+desenvolupament i no substitueixen les comprovacions següents sobre el 118.
+
+Preparat `validation/ieee118_mn.sh`: una configuració del cas base per job,
+`gp_debug`, un node, 8 computing slots al mestre i fins a 120 minuts.
+No usa ni modifica la BD de contingències. Xarxa RAW original, sense canvis
+de slack ni paràmetres. Resultats i logs en una carpeta nova sota
+`outputs/validation/ieee118_base_case/` per defecte.
+
+**No s'ha enviat aquest job.** El motor actual encara rebutja SARGENTS.
+Després de resoldre la incidència, cal seguir les etapes en aquest ordre,
+revisant el resultat abans de continuar:
+
+1. Reexecutar el reproductor `bug/reproduce.py` per comprovar la resposta
+   del constructor; una excepció diferent no acredita que tot estigui resolt.
+2. Primer cas base amb 600 passos/període, durada total d'un període, 12 modes.
+   Comprovar PF/PF3, construcció, inicialització i convergència EMT, i modes
+   finits. Si falla, diagnosticar aquella etapa i aturar els refinaments.
+3. Si el primer cas funciona, comparar 600 i 1200 passos amb la mateixa
+   durada: tancament periòdic, residuals i canvis dels modes seleccionats.
+4. A 1200 passos, comparar durada total d'un i deu períodes, capturant sempre
+   l'últim. Justificar si s'arriba a una òrbita prou periòdica; no hi ha encara
+   una tolerància física universal d'acceptació fixada.
+5. Sobre la configuració adequada, comparar 12 i 24 modes si el model i el
+   solver ho permeten. El nombre de modes per si sol no certifica tot l'espectre.
+6. Només després seleccionar unes poques contingències representatives per
+   validar la transició del cas base als casos amb fallada, abans del catàleg.
+
+Comandes (enviar-les només quan correspongui segons les etapes anteriors):
+
+```bash
+# Només inspecciona: no carrega mòduls ni envia jobs.
+./validation/ieee118_mn.sh --dry-run
+
+# Primera prova, després de la correcció del motor.
+./validation/ieee118_mn.sh
+
+# Refinaments posteriors, cada un condicionat a revisar el resultat anterior.
+STEPS_PER_PERIOD=1200 ./validation/ieee118_mn.sh
+STEPS_PER_PERIOD=1200 SETTLE_PERIODS=10 ./validation/ieee118_mn.sh
+STEPS_PER_PERIOD=1200 SETTLE_PERIODS=10 MODES=24 ./validation/ieee118_mn.sh
+```
+
+`validation/base_case.py` conserva el recompte simple de connexions com a
+**diagnòstic**, però deixa decidir l'acceptació al constructor original de
+VeraGrid. Així no es manté un veto anticipat obsolet després d'una correcció
+del motor. No es modifica el validador del motor ni el filtre del pipeline
+productiu. Aquest últim s'haurà d'adaptar segons la solució acordada.
+
+El contrast amb espectre dens només s'executa si la dimensió és ≤256; al 118
+pot quedar omès per cost. Residus petits comproven els eigenparells calculats,
+però no substitueixen validació física o cobertura completa de modes.

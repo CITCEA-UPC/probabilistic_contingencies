@@ -61,8 +61,10 @@ def assess_base_case(grid_path, out_dir, steps_per_period, settle_periods, mode_
     pf3=ct.vge.power_flow3ph(grid)
     if not pf.converged or not pf3.converged:
         raise RuntimeError('Base power flow did not converge')
-    rejected=[bus.name for bus in ct.get_buses_with_few_connections(grid)]
-    if rejected: raise RuntimeError(f'Base EMT topology rejected: {rejected}')
+    connection_count_candidates=[bus.name for bus in ct.get_buses_with_few_connections(grid)]
+    # El recompte és diagnòstic. El constructor ORIGINAL de VeraGrid decideix
+    # l'acceptació: un cop corregit el motor, no anticipem el rebuig amb la
+    # mateixa heurística antiga. No es relaxa ni substitueix cap validació EMT.
     ct.attach_emt_models(grid)
     period=1/grid.fBase
     h=period/steps_per_period
@@ -117,6 +119,7 @@ def assess_base_case(grid_path, out_dir, steps_per_period, settle_periods, mode_
         'target_period':period,'captured_period':float(t[-1]-t[0]),
         'powerflow_converged':bool(pf.converged),'pf3_converged':bool(pf3.converged),
         'n_islands':ct.get_islands_info(grid)[0],'temporal_health':driver.temporal_health,
+        'connection_count_candidates':connection_count_candidates,
         'state_count':n_states,'operator_dimension':operator.shape[0],
         'cycle_closure':cycle_closure(y,names,n_states),
         'eigenvalues':[[float(z.real),float(z.imag)] for z in result.eigenvalues],

@@ -48,9 +48,13 @@ tasques es distribueixen en paral·lel pels nodes/cores.
 """
 
 import argparse
+from contextlib import contextmanager
+import json
 import os
+from pathlib import Path
 import sqlite3
 import sys
+from time import perf_counter
 
 # local_exec.sh força els dummies per depurar en un únic procés, fins i tot
 # si PyCOMPSs està instal·lat. Al BSC es mantenen els imports del runtime real.
@@ -229,21 +233,52 @@ def process_contingency_task(definition):
     }
 
 
+@contextmanager
+def _measure_stage(metrics, name):
+    """Temps de paret al mestre; conserva també el temps d'un intent fallit."""
+    started = perf_counter()
+    try:
+        yield
+    finally:
+        metrics[name] += perf_counter() - started
+
+
 def process_selected_contingencies(ids, batch_size):
-    """Envia les tasques i desa els resultats al mestre per lots atòmics."""
-    definitions = storage.load_definitions(config.DB_FILE, ids)
-    futures = [process_contingency_task(definition) for definition in definitions]
-    n_ok = 0
-    for start in range(0, len(ids), batch_size):
-        end = start + batch_size
-        batch = futures[start:end]
-        results = compss_wait_on(batch)
-        storage.save_results(config.DB_FILE, results, expected_ids=ids[start:end])
-        n_ok += sum(item["result"].get("status") == contingency.STATUS_OK for item in results)
-        compss_delete_object(*batch)
-        futures[start:end] = [None] * len(batch)
-        print(f"Committed {min(end, len(ids))}/{len(ids)} contingency results.")
-    return n_ok, len(ids) - n_ok
+    """Envia tasques, desa lots i imprimeix mesures del mestre sense tocar la BD."""
+    started = perf_counter()
+    metrics = dict(selected=len(ids), submitted=0, committed=0, committed_batches=0,
+                   batch_size=batch_size, completed=False,
+                   load_definitions_s=0.0, submit_s=0.0,
+                   wait_results_s=0.0, persist_results_s=0.0)
+    try:
+        with _measure_stage(metrics, "load_definitions_s"):
+            definitions = storage.load_definitions(config.DB_FILE, ids)
+        futures = []
+        with _measure_stage(metrics, "submit_s"):
+            for definition in definitions:
+                futures.append(process_contingency_task(definition))
+                metrics["submitted"] += 1
+        n_ok = 0
+        for start in range(0, len(ids), batch_size):
+            end = start + batch_size
+            batch = futures[start:end]
+            with _measure_stage(metrics, "wait_results_s"):
+                results = compss_wait_on(batch)
+            with _measure_stage(metrics, "persist_results_s"):
+                storage.save_results(config.DB_FILE, results, expected_ids=ids[start:end])
+            metrics["committed"] += len(batch)
+            metrics["committed_batches"] += 1
+            n_ok += sum(item["result"].get("status") == contingency.STATUS_OK for item in results)
+            compss_delete_object(*batch)
+            futures[start:end] = [None] * len(batch)
+            print(f"Committed {min(end, len(ids))}/{len(ids)} contingency results.")
+        metrics["completed"] = True
+        return n_ok, len(ids) - n_ok
+    finally:
+        # Inclou alliberament de futures i logs; exclou preprocess, selecció
+        # d'IDs, informes i arrencada/tancament del runtime COMPSs.
+        metrics["processing_total_s"] = perf_counter() - started
+        print("PROCESS_PERFORMANCE " + json.dumps(metrics, sort_keys=True), flush=True)
 
 
 def positive_int(value):
@@ -312,14 +347,35 @@ def main():
         help="Use a separate SQLite database instead of config.DB_FILE (also applies to preprocess).",
     )
     parser.add_argument(
+        "--grid",
+        help="Grid file for preprocessing/full pipeline (overrides config.py; derives the database name unless --db is supplied).",
+    )
+    parser.add_argument(
+        "--reset-db",
+        action="store_true",
+        help="Delete the selected database before preprocessing, regardless of CLEAR_DB_ON_START.",
+    )
+    parser.add_argument(
         "--batch-size",
         type=positive_int,
         default=256,
         help="Results per SQLite transaction on the master (default: 256; does not limit task concurrency).",
     )
     args = parser.parse_args()
+    if (args.grid or args.reset_db) and (args.ids or args.all or args.pending):
+        parser.error("--grid and --reset-db require preprocessing/full pipeline; omit --ids, --all and --pending")
+    if args.grid:
+        grid_path = Path(args.grid).expanduser().resolve()
+        if not grid_path.is_file():
+            parser.error(f"Grid file not found: {grid_path}")
+        config.GRID_PATH = str(grid_path)
+        config.GRID_NAME = grid_path.name
+        stem = grid_path.stem.replace(" ", "_")
+        config.DB_FILE = str(Path(config.DB_FILE).parent / f"results_{stem}.db")
     if args.db is not None:
         config.DB_FILE = os.path.abspath(os.path.expanduser(args.db))
+    if args.reset_db:
+        config.CLEAR_DB_ON_START = True
 
     # --preprocess: NOMÉS genera la BD i surt.
     if args.preprocess:
@@ -350,12 +406,17 @@ def main():
         from risk_analysis import run_analysis
 
         print("Generating risk reports from the entire database (unique N-2 pairs)...")
+        report_metrics = dict(completed=False, risk_reports_s=0.0)
         try:
-            run_analysis(config.DB_FILE, out_dir=args.risk_out)
+            with _measure_stage(report_metrics, "risk_reports_s"):
+                run_analysis(config.DB_FILE, out_dir=args.risk_out)
+            report_metrics["completed"] = True
         except Exception:
             print("Risk report generation failed; simulation results remain saved in the database.",
                   file=sys.stderr)
             raise
+        finally:
+            print("RISK_PERFORMANCE " + json.dumps(report_metrics, sort_keys=True), flush=True)
 
 
 if __name__ == "__main__":
